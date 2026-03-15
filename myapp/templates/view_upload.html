@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block title %}{{ upload.original_filename }} — DataFlow{% endblock %}
+
+{% block head %}
+<style>
+  .roster-wrap { overflow-x: auto; }
+
+  .roster-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+  }
+
+  .roster-table thead tr {
+    position: sticky;
+    top: 56px;
+    z-index: 10;
+  }
+
+  .roster-table th {
+    background: #1e1e1e;
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .roster-table th.col-confirm {
+    color: var(--accent);
+    text-align: center;
+    min-width: 160px;
+  }
+
+  .roster-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  .roster-table tr:last-child td { border-bottom: none; }
+
+  .roster-table tbody tr { transition: background .1s; }
+  .roster-table tbody tr:hover td { background: rgba(200,240,122,.04); }
+
+  .roster-table tbody tr.confirmed-row td {
+    background: rgba(200,240,122,.07);
+  }
+
+  /* rank number column */
+  .col-num { color: var(--muted); font-size: 11px; width: 40px; text-align: right; }
+
+  /* player name — bold */
+  .col-name { font-weight: 500; color: var(--text); }
+
+  /* class badge */
+  .class-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .cls-Nekromanta      { background:#1a1a2e; color:#a0a0f0; border:1px solid #2a2a4e; }
+  .cls-Barbarzyńca     { background:#2e1a0f; color:#f0a060; border:1px solid #4e2a0f; }
+  .cls-Łowca_demonów   { background:#1a2e1a; color:#70c070; border:1px solid #2a4e2a; }
+  .cls-Rycerz_krwi     { background:#2e0f0f; color:#f07070; border:1px solid #5c1a1a; }
+  .cls-Czarownik       { background:#2a1a2e; color:#c070e0; border:1px solid #4a2a5e; }
+  .cls-Mnich           { background:#1a2a2e; color:#60c0d0; border:1px solid #2a4a5e; }
+  .cls-Krzyżowiec      { background:#2e2a0f; color:#e0d060; border:1px solid #4e400f; }
+  .cls-Sztormiciel     { background:#0f1e2e; color:#60a0f0; border:1px solid #1a3a5c; }
+  .cls-Druid           { background:#1a2e20; color:#60d090; border:1px solid #2a4e38; }
+  .cls-default         { background:#1a1a1a; color:var(--muted); border:1px solid var(--border); }
+
+  /* confirm cell */
+  .col-confirm-cell { text-align: center; }
+
+  .confirm-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 6px 14px;
+    border-radius: 99px;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    transition: all .15s;
+    user-select: none;
+  }
+  .confirm-label:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .confirm-label input[type=checkbox] {
+    display: none;
+  }
+  .confirm-label .check-icon {
+    width: 14px; height: 14px;
+    border: 1px solid currentColor;
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 10px;
+  }
+  .confirm-label.is-confirmed {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(200,240,122,.1);
+  }
+  .confirm-label.is-confirmed .check-icon::after {
+    content: '✓';
+  }
+
+  /* footer bar */
+  .attendance-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 20px 24px;
+    background: #1e1e1e;
+    border-top: 2px solid var(--border);
+    border-radius: 0 0 6px 6px;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+  }
+
+  .attendance-counter {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .attendance-counter strong {
+    font-size: 22px;
+    font-family: var(--serif);
+    font-weight: 300;
+    color: var(--accent);
+    margin-right: 4px;
+  }
+
+  /* ranking "outside" badge */
+  .rank-outside {
+    color: var(--muted);
+    font-size: 11px;
+    font-style: italic;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-title">{{ upload.original_filename }}</div>
+<div class="page-subtitle">
+  {{ rows|length }} {{ t.preview_subtitle_rows }} &middot;
+  {{ t.preview_subtitle_uploaded }} {{ upload.uploaded_at.strftime('%d %b %Y %H:%M') }}
+  &middot; <span style="color:var(--accent);">{{ confirmed_count }} {{ t.attendance_count }}</span>
+</div>
+
+<div style="display:flex; gap:12px; margin-bottom:20px;">
+  <a href="{{ url_for('main.manage_uploads') }}" class="btn btn-ghost">← {{ t.preview_btn_back }}</a>
+</div>
+
+<form method="POST" action="{{ url_for('main.save_attendance', upload_id=upload.id) }}" id="attendance-form">
+  <div class="card" style="padding:0; overflow:hidden;">
+    <div class="roster-wrap">
+      <table class="roster-table">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            {% for col in columns %}
+            <th>{{ col }}</th>
+            {% endfor %}
+            <th class="col-confirm">{{ t.attendance_col }}</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for row in rows %}
+        {% set idx = loop.index0 %}
+        {% set is_confirmed = confirmed.get(idx|string, false) %}
+        <tr class="{{ 'confirmed-row' if is_confirmed else '' }}" id="row-{{ idx }}">
+          <td class="col-num">{{ loop.index }}</td>
+
+          {% for col in columns %}
+            {% set val = row[col] %}
+            {% if col == 'Nazwa' %}
+              <td class="col-name">{{ val }}</td>
+            {% elif col == 'Klasa' %}
+              <td>
+                <span class="class-badge cls-{{ val | replace(' ', '_') if val else 'default' }}">{{ val }}</span>
+              </td>
+            {% elif col == 'Ranking udziału' %}
+              <td>
+                {% if val == 'Poza rankingiem' or val == '' %}
+                  <span class="rank-outside">{{ val if val else '—' }}</span>
+                {% else %}
+                  {{ val }}
+                {% endif %}
+              </td>
+            {% else %}
+              <td>{{ val }}</td>
+            {% endif %}
+          {% endfor %}
+
+          <td class="col-confirm-cell">
+            <label class="confirm-label {{ 'is-confirmed' if is_confirmed else '' }}"
+                   for="check-{{ idx }}"
+                   id="label-{{ idx }}">
+              <input type="checkbox"
+                     name="row_{{ idx }}"
+                     id="check-{{ idx }}"
+                     {{ 'checked' if is_confirmed else '' }}
+                     onchange="toggleRow({{ idx }}, this.checked)"/>
+              <span class="check-icon"></span>
+              <span class="confirm-text">{{ t.attendance_col }}</span>
+            </label>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="attendance-footer">
+      <div class="attendance-counter">
+        <strong id="confirmed-count">{{ confirmed_count }}</strong>
+        {{ t.attendance_of }} {{ rows|length }} {{ t.attendance_count }}
+      </div>
+      <button type="submit" class="btn btn-primary">{{ t.attendance_save }} ✓</button>
+    </div>
+  </div>
+</form>
+
+<script>
+function toggleRow(idx, checked) {
+  const row = document.getElementById('row-' + idx);
+  const label = document.getElementById('label-' + idx);
+  if (checked) {
+    row.classList.add('confirmed-row');
+    label.classList.add('is-confirmed');
+  } else {
+    row.classList.remove('confirmed-row');
+    label.classList.remove('is-confirmed');
+  }
+  updateCount();
+}
+
+function updateCount() {
+  const total = document.querySelectorAll('.confirm-label input[type=checkbox]').length;
+  const checked = document.querySelectorAll('.confirm-label input[type=checkbox]:checked').length;
+  document.getElementById('confirmed-count').textContent = checked;
+}
+</script>
+{% endblock %}

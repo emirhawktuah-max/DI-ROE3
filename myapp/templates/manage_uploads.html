@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ t.manage_title }} — DataFlow{% endblock %}
+{% block content %}
+<div class="page-title">{{ t.manage_title }}</div>
+<div class="page-subtitle">
+  {% if current_user.is_admin() %}{{ t.manage_subtitle_admin }}{% else %}{{ t.manage_subtitle_user }}{% endif %}
+</div>
+
+<div style="margin-bottom:20px; display:flex; gap:12px;">
+  <a href="{{ url_for('main.upload') }}" class="btn btn-primary">{{ t.manage_btn_upload }}</a>
+</div>
+
+{% if uploads %}
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>{{ t.manage_col_file }}</th>
+        {% if current_user.is_admin() %}<th>{{ t.manage_col_owner }}</th>{% endif %}
+        <th>{{ t.manage_col_rows }}</th>
+        <th>{{ t.manage_col_columns }}</th>
+        <th>{{ t.manage_col_shared }}</th>
+        <th>{{ t.manage_col_uploaded }}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for u in uploads %}
+    <tr>
+      <td>
+        <a href="{{ url_for('main.preview_upload', upload_id=u.id) }}" style="color:var(--accent); text-decoration:none;">
+          {{ u.original_filename }}
+        </a>
+      </td>
+      {% if current_user.is_admin() %}
+      <td>{{ u.owner.username }}</td>
+      {% endif %}
+      <td>{{ u.row_count }}</td>
+      <td style="color:var(--muted); font-size:12px;">
+        {% set cols = u.columns | from_json %}
+        {{ cols | length }} {{ t.manage_cols_label }}
+        <span style="display:block; color:var(--muted); font-size:11px; margin-top:2px;">
+          {{ cols[:3] | join(', ') }}{% if cols | length > 3 %}…{% endif %}
+        </span>
+      </td>
+      <td>
+        {% if u.is_shared %}
+          <span class="tag tag-shared">{{ t.manage_shared_tag }}</span>
+        {% else %}
+          <span style="color:var(--muted); font-size:12px;">{{ t.manage_private }}</span>
+        {% endif %}
+      </td>
+      <td style="color:var(--muted); font-size:12px;">{{ u.uploaded_at.strftime('%d %b %Y %H:%M') }}</td>
+      <td style="display:flex; gap:6px; flex-wrap:wrap;">
+        <a href="{{ url_for('main.view_upload', upload_id=u.id) }}" class="btn btn-primary btn-sm">{{ t.manage_btn_view }}</a>
+        <a href="{{ url_for('main.preview_upload', upload_id=u.id) }}" class="btn btn-ghost btn-sm">{{ t.manage_btn_preview }}</a>
+        <a href="{{ url_for('main.choices', upload_id=u.id) }}" class="btn btn-ghost btn-sm">{{ t.manage_btn_process }}</a>
+        {% if u.user_id == current_user.id or current_user.is_admin() %}
+        <form method="POST" action="{{ url_for('main.delete_upload', upload_id=u.id) }}"
+              onsubmit="return confirm('{{ t.manage_confirm_delete }} {{ u.original_filename }}?')">
+          <button type="submit" class="btn btn-danger btn-sm">{{ t.manage_btn_delete }}</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card">
+  <div class="empty">{{ t.manage_no_uploads }} <a href="{{ url_for('main.upload') }}" style="color:var(--accent)">{{ t.dashboard_upload_link }}</a></div>
+</div>
+{% endif %}
+{% endblock %}

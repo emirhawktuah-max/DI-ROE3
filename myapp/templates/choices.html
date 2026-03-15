@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ t.choices_title }} — DataFlow{% endblock %}
+{% block content %}
+<div class="page-title">{{ t.choices_title }}</div>
+<div class="page-subtitle">
+  {{ t.choices_file }}: <strong>{{ upload.original_filename }}</strong> &mdash;
+  {{ upload.row_count }} {{ t.choices_rows }} &middot; {{ t.choices_uploaded }} {{ upload.uploaded_at.strftime('%d %b %Y') }}
+</div>
+
+<div class="card" style="max-width:560px;">
+  <form method="POST">
+    {% for c in choice_defs %}
+    <div class="form-group">
+      {% if c.type == 'select' %}
+        <label>{{ c.label }}</label>
+        <select name="{{ c.name }}">
+          {% for opt in c.options %}
+          <option value="{{ opt }}" {% if opt == c.get('default','') %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+
+      {% elif c.type == 'multiselect' %}
+        <label>{{ c.label }}</label>
+        <select name="{{ c.name }}" multiple style="height:120px;">
+          {% for opt in c.options %}
+          <option value="{{ opt }}">{{ opt }}</option>
+          {% endfor %}
+        </select>
+
+      {% elif c.type == 'checkbox' %}
+        <div class="checkbox-row">
+          <input type="checkbox" name="{{ c.name }}" id="{{ c.name }}"
+            {% if c.get('default') %}checked{% endif %}/>
+          <label for="{{ c.name }}">{{ c.label }}</label>
+        </div>
+
+      {% elif c.type == 'text' %}
+        <label>{{ c.label }}</label>
+        <input type="text" name="{{ c.name }}" value="{{ c.get('default','') }}"/>
+      {% endif %}
+    </div>
+    {% endfor %}
+
+    <div style="display:flex; gap:12px; margin-top:8px;">
+      <button type="submit" class="btn btn-primary">{{ t.choices_submit }}</button>
+      <a href="{{ url_for('main.dashboard') }}" class="btn btn-ghost">{{ t.choices_cancel }}</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

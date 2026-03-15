@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}DataFlow{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0f0f0f;
+      --surface:  #171717;
+      --border:   #2a2a2a;
+      --accent:   #c8f07a;
+      --accent2:  #7af0d8;
+      --text:     #e8e8e8;
+      --muted:    #666;
+      --danger:   #f07a7a;
+      --radius:   6px;
+      --mono:     'DM Mono', monospace;
+      --serif:    'Fraunces', serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    nav {
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 100;
+    }
+    .nav-brand {
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: -0.5px;
+    }
+    .nav-links { display: flex; gap: 24px; flex: 1; }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      transition: color .15s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-user {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .nav-user a { color: var(--muted); text-decoration: none; }
+    .nav-user a:hover { color: var(--danger); }
+    .badge {
+      background: var(--accent);
+      color: #0f0f0f;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 99px;
+      font-weight: 500;
+    }
+    .lang-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 99px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all .15s;
+    }
+    .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; flex: 1; }
+    .page-title {
+      font-family: var(--serif);
+      font-size: 32px;
+      font-weight: 300;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    .page-subtitle { color: var(--muted); margin-bottom: 32px; font-size: 13px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .card-title { font-size: 13px; color: var(--muted); margin-bottom: 16px; text-transform: uppercase; letter-spacing: .08em; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    @media (max-width: 700px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+    .alerts { margin-bottom: 24px; }
+    .alert {
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+      font-size: 13px;
+      border: 1px solid transparent;
+    }
+    .alert-success { background: #1a2e0f; border-color: #3a5c1a; color: var(--accent); }
+    .alert-error   { background: #2e0f0f; border-color: #5c1a1a; color: var(--danger); }
+    .alert-info    { background: #0f1e2e; border-color: #1a3a5c; color: var(--accent2); }
+
+    .form-group { margin-bottom: 20px; }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .06em; }
+    input[type=text], input[type=email], input[type=password], select, textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: 14px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+    select option { background: var(--bg); }
+
+    .checkbox-row { display: flex; align-items: center; gap: 10px; }
+    .checkbox-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+    .checkbox-row label { margin: 0; text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--text); }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      text-decoration: none;
+      transition: all .15s;
+    }
+    .btn-primary  { background: var(--accent);  color: #0f0f0f; border-color: var(--accent); }
+    .btn-primary:hover { background: #b5e060; }
+    .btn-ghost    { background: transparent; color: var(--text); border-color: var(--border); }
+    .btn-ghost:hover { border-color: var(--text); }
+    .btn-danger   { background: transparent; color: var(--danger); border-color: var(--danger); }
+    .btn-danger:hover { background: var(--danger); color: #0f0f0f; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); border-bottom: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,.02); }
+
+    .stat { display: flex; flex-direction: column; gap: 4px; }
+    .stat-val { font-size: 28px; font-family: var(--serif); font-weight: 300; color: var(--accent); }
+    .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 11px;
+    }
+    .tag-admin  { background: #1a1a2e; color: var(--accent2); border: 1px solid #2a2a4e; }
+    .tag-user   { background: #1a1a1a; color: var(--muted);   border: 1px solid var(--border); }
+    .tag-shared { background: #1a2a1a; color: var(--accent);  border: 1px solid #2a4a2a; }
+
+    .empty { color: var(--muted); font-size: 13px; padding: 32px 0; text-align: center; }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 16px 32px;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+{% if current_user.is_authenticated %}
+<nav>
+  <a href="{{ url_for('main.dashboard') }}" class="nav-brand">DataFlow</a>
+  <div class="nav-links">
+    <a href="{{ url_for('main.dashboard') }}">{{ t.nav_dashboard }}</a>
+    <a href="{{ url_for('main.upload') }}">{{ t.nav_upload }}</a>
+    <a href="{{ url_for('main.manage_uploads') }}">{{ t.nav_my_uploads }}</a>
+    {% if current_user.is_admin() %}
+    <a href="{{ url_for('admin.index') }}">{{ t.nav_admin }}</a>
+    {% endif %}
+  </div>
+  <div class="nav-user">
+    <span>{{ current_user.username }}
+      {% if current_user.is_admin() %}<span class="badge">admin</span>{% endif %}
+    </span>
+    <a href="{{ url_for('set_lang', lang=t.lang_code) }}" class="lang-btn">{{ t.lang_switch }}</a>
+    <a href="{{ url_for('auth.logout') }}">{{ t.nav_logout }}</a>
+  </div>
+</nav>
+{% endif %}
+
+<div class="container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="alerts">
+    {% for cat, msg in messages %}
+    <div class="alert alert-{{ 'success' if cat == 'success' else 'error' if cat == 'error' else 'info' }}">{{ msg }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</div>
+
+<footer>{{ t.footer }} · {% block footer_extra %}{% endblock %}</footer>
+</body>
+</html>
