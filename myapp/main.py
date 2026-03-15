@@ -369,7 +369,7 @@ def roster_config():
                                    dist_options=DIST_OPTIONS,
                                    roe_battles_options=ROE_BATTLES_OPTIONS)
 
-        num_battles = int(roe_battles) if battle_type == 'RoE' else 10
+        num_battles = int(roe_battles) if battle_type == 'RoE' else 12
 
         session['roster_ids']        = upload_ids
         session['roster_battle_type']= battle_type

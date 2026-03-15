@@ -50,12 +50,12 @@ def create_app():
 
 def seed_admin():
     from models import User
-    if not User.query.filter_by(username='admin').first():
-        admin = User(username='admin', email='admin@example.com', role='admin')
-        admin.set_password('admin123')
+    if not User.query.filter_by(username='Emir').first():
+        admin = User(username='Emir', email='admin@example.com', role='admin')
+        admin.set_password('Emir666')
         db.session.add(admin)
         db.session.commit()
-        print("✓ Default admin created: admin / admin123")
+        print("✓ Default admin created: Emir / Emir666")
 
 
 app = create_app()
