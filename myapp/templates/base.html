@@ -209,6 +209,7 @@
     <a href="{{ url_for('main.dashboard') }}">{{ t.nav_dashboard }}</a>
     <a href="{{ url_for('main.upload') }}">{{ t.nav_upload }}</a>
     <a href="{{ url_for('main.manage_uploads') }}">{{ t.nav_my_uploads }}</a>
+    <a href="{{ url_for('main.roster_select') }}">{{ t.nav_roster }}</a>
     {% if current_user.is_admin() %}
     <a href="{{ url_for('admin.index') }}">{{ t.nav_admin }}</a>
     {% endif %}

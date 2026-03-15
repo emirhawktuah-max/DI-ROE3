@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}{{ t.roster_config_title }} — DataFlow{% endblock %}
+
+{% block head %}
+<style>
+.option-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.option-pill {
+  position: relative;
+  cursor: pointer;
+}
+.option-pill input[type=radio] { display: none; }
+.option-pill-label {
+  display: inline-block;
+  padding: 8px 18px;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .15s;
+  user-select: none;
+}
+.option-pill input[type=radio]:checked + .option-pill-label {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(200,240,122,.1);
+}
+.option-pill-label:hover { border-color: var(--text); color: var(--text); }
+
+.conditional-field {
+  display: none;
+  margin-top: 0;
+  padding: 16px;
+  background: rgba(200,240,122,.04);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  margin-bottom: 4px;
+}
+.conditional-field.visible { display: block; }
+
+.section-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 20px 0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-title">{{ t.roster_config_title }}</div>
+<div class="page-subtitle">{{ t.roster_config_subtitle }}</div>
+
+<div class="card" style="max-width:600px;">
+  <form method="POST" id="config-form">
+    <input type="hidden" name="ids" value="{{ ids_str }}"/>
+
+    <!-- Selected files -->
+    <div class="form-group">
+      <label>{{ t.roster_config_files_label }}</label>
+      <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
+        {% for u in uploads %}
+        <div style="display:flex; align-items:center; gap:10px; padding:9px 14px;
+                    background:var(--bg); border:1px solid var(--border);
+                    border-radius:var(--radius); font-size:13px;">
+          <span style="color:var(--accent);">▪</span>
+          <span style="flex:1;">{{ u.original_filename }}</span>
+          <span style="color:var(--muted); font-size:11px;">{{ u.row_count }} {{ t.preview_subtitle_rows }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <hr class="section-divider"/>
+
+    <!-- 1. Battle type -->
+    <div class="form-group">
+      <label>{{ t.roster_battle_type_label }}</label>
+      <div class="option-group">
+        {% for bt in battle_types %}
+        <label class="option-pill">
+          <input type="radio" name="battle_type" value="{{ bt }}"
+                 onchange="onBattleTypeChange(this.value)" required/>
+          <span class="option-pill-label">{{ bt }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- RoE: number of battles -->
+    <div class="conditional-field" id="field-roe-battles">
+      <div class="form-group" style="margin-bottom:0;">
+        <label>{{ t.roster_roe_battles_label }}</label>
+        <div class="option-group">
+          {% for n in roe_battles_options %}
+          <label class="option-pill">
+            <input type="radio" name="roe_battles" value="{{ n }}" {% if n == '10' %}checked{% endif %}/>
+            <span class="option-pill-label">{{ n }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <hr class="section-divider"/>
+
+    <!-- 2. Priority -->
+    <div class="form-group">
+      <label>{{ t.roster_priority_label }}</label>
+      <div class="option-group">
+        {% for opt in priority_options %}
+        <label class="option-pill">
+          <input type="radio" name="priority" value="{{ opt }}" required/>
+          <span class="option-pill-label">{{ opt }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <hr class="section-divider"/>
+
+    <!-- 3. Online only -->
+    <div class="form-group">
+      <label>{{ t.roster_online_label }}</label>
+      <div class="option-group">
+        {% for opt in online_options %}
+        <label class="option-pill">
+          <input type="radio" name="online_only" value="{{ opt }}" required/>
+          <span class="option-pill-label">{{ opt }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <hr class="section-divider"/>
+
+    <!-- 4. Distribution -->
+    <div class="form-group">
+      <label>{{ t.roster_dist_label }}</label>
+      <div class="option-group">
+        {% for opt in dist_options %}
+        <label class="option-pill">
+          <input type="radio" name="distribution" value="{{ opt }}" required/>
+          <span class="option-pill-label">{{ opt }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <hr class="section-divider"/>
+
+    <div style="display:flex; gap:12px; margin-top:8px;">
+      <button type="submit" class="btn btn-primary">{{ t.roster_config_submit }}</button>
+      <a href="{{ url_for('main.roster_select') }}" class="btn btn-ghost">← {{ t.upload_cancel }}</a>
+    </div>
+  </form>
+</div>
+
+<script>
+function onBattleTypeChange(val) {
+  var el = document.getElementById('field-roe-battles');
+  if (val === 'RoE') {
+    el.classList.add('visible');
+    // make roe_battles required
+    el.querySelectorAll('input').forEach(function(i){ i.required = true; });
+  } else {
+    el.classList.remove('visible');
+    el.querySelectorAll('input').forEach(function(i){ i.required = false; });
+  }
+}
+</script>
+{% endblock %}

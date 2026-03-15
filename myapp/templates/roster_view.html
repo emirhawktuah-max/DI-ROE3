@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}{{ t.roster_view_title }} — DataFlow{% endblock %}
+
+{% block head %}
+<style>
+.battle-badge {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 500;
+  background: rgba(200,240,122,.15);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  margin-left: 12px;
+  vertical-align: middle;
+}
+.config-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+.config-pill {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 3px 12px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.config-pill strong { color: var(--text); }
+
+.battles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+  gap: 16px;
+}
+@media (max-width: 600px) { .battles-grid { grid-template-columns: 1fr; } }
+
+.battle-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.battle-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #1e1e1e;
+  border-bottom: 1px solid var(--border);
+}
+.battle-num {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 300;
+  color: var(--accent);
+}
+.battle-stats {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+}
+.battle-stats strong { color: var(--text); }
+
+.battle-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.battle-table th {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--muted); border-bottom: 1px solid var(--border);
+  padding: 6px 10px; text-align: left; background: #1a1a1a;
+}
+.battle-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.battle-table tr:last-child td { border-bottom: none; }
+.battle-table tr:hover td { background: rgba(255,255,255,.02); }
+
+.class-badge {
+  display: inline-block; padding: 1px 7px; border-radius: 99px;
+  font-size: 10px; font-weight: 500; white-space: nowrap;
+}
+.cls-Nekromanta    { background:#1a1a2e; color:#a0a0f0; border:1px solid #2a2a4e; }
+.cls-Barbarzyńca   { background:#2e1a0f; color:#f0a060; border:1px solid #4e2a0f; }
+.cls-Łowca_demonów { background:#1a2e1a; color:#70c070; border:1px solid #2a4e2a; }
+.cls-Rycerz_krwi   { background:#2e0f0f; color:#f07070; border:1px solid #5c1a1a; }
+.cls-Czarownik     { background:#2a1a2e; color:#c070e0; border:1px solid #4a2a5e; }
+.cls-Mnich         { background:#1a2a2e; color:#60c0d0; border:1px solid #2a4a5e; }
+.cls-Krzyżowiec    { background:#2e2a0f; color:#e0d060; border:1px solid #4e400f; }
+.cls-Sztormiciel   { background:#0f1e2e; color:#60a0f0; border:1px solid #1a3a5c; }
+.cls-Druid         { background:#1a2e20; color:#60d090; border:1px solid #2a4e38; }
+.cls-default       { background:#1a1a1a; color:var(--muted); border:1px solid var(--border); }
+.rank-outside { color:var(--muted); font-size:10px; font-style:italic; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-title">
+  {{ t.roster_view_title }}
+  <span class="battle-badge">{{ battle_type }}</span>
+</div>
+
+<div class="config-pills">
+  <span class="config-pill">{{ t.roster_priority_label }}: <strong>{{ priority }}</strong></span>
+  <span class="config-pill">{{ t.roster_online_label }}: <strong>{{ online_only }}</strong></span>
+  <span class="config-pill">{{ t.roster_dist_label }}: <strong>{{ distribution }}</strong></span>
+  <span class="config-pill">{{ t.roster_num_battles_label }}: <strong>{{ num_battles }}</strong></span>
+  <span class="config-pill">{{ t.roster_total_players }}: <strong>{{ total_players }}</strong></span>
+  {% for f in source_files %}
+  <span class="config-pill">{{ f }}</span>
+  {% endfor %}
+</div>
+
+{% if groups %}
+<div class="battles-grid">
+  {% for group in groups %}
+  {% set stat = group_stats[loop.index0] %}
+  <div class="battle-card">
+    <div class="battle-card-header">
+      <span class="battle-num">{{ t.roster_battle_label }} {{ loop.index }}</span>
+      <div class="battle-stats">
+        <strong>{{ stat.count }}</strong> {{ t.preview_subtitle_rows }}<br>
+        ø reso <strong>{{ stat.avg_reso }}</strong>
+      </div>
+    </div>
+    {% if group %}
+    <table class="battle-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          {% for col in columns %}
+          <th>{{ col }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+      {% for player in group %}
+      <tr>
+        <td style="color:var(--muted); font-size:10px;">{{ loop.index }}</td>
+        {% for col in columns %}
+          {% set val = player[col] %}
+          {% if col == 'Nazwa' %}
+            <td style="font-weight:500; font-size:12px;">{{ val }}</td>
+          {% elif col == 'Klasa' %}
+            <td>
+              <span class="class-badge cls-{{ val | replace(' ', '_') if val else 'default' }}">{{ val }}</span>
+            </td>
+          {% elif col == 'Ranking udziału' %}
+            <td>
+              {% if val == 'Poza rankingiem' or val == '' %}
+                <span class="rank-outside">{{ val if val else '—' }}</span>
+              {% else %}{{ val }}{% endif %}
+            </td>
+          {% else %}
+            <td>{{ val }}</td>
+          {% endif %}
+        {% endfor %}
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="padding:16px; color:var(--muted); font-size:12px; text-align:center;">—</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="empty">{{ t.roster_no_players }}</div>
+</div>
+{% endif %}
+
+<div style="margin-top:28px; display:flex; gap:12px;">
+  <a href="{{ url_for('main.roster_select') }}" class="btn btn-ghost">{{ t.roster_back }}</a>
+  <a href="{{ url_for('main.roster_config') }}?ids={{ session.get('roster_ids', [])|join(',') }}" class="btn btn-ghost">{{ t.roster_reconfigure }}</a>
+</div>
+{% endblock %}
