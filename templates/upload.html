@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ t.upload_title }} — DataFlow{% endblock %}
+{% block content %}
+<div class="page-title">{{ t.upload_title }}</div>
+<div class="page-subtitle">{{ t.upload_subtitle }}</div>
+
+<div class="card" style="max-width:560px;">
+  <form method="POST" enctype="multipart/form-data">
+
+    <div class="form-group">
+      <label>{{ t.upload_clan_label }}</label>
+      <select name="clan" required>
+        <option value="" disabled selected style="color:var(--muted);">— select —</option>
+        {% for clan in clan_options %}
+        <option value="{{ clan }}">{{ clan }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>{{ t.upload_label }}</label>
+      <input type="file" name="csv_file" accept=".txt" required
+        style="padding:8px; cursor:pointer;"/>
+    </div>
+
+    {% if current_user.is_admin() %}
+    <div class="form-group">
+      <div class="checkbox-row">
+        <input type="checkbox" name="is_shared" id="is_shared"/>
+        <label for="is_shared">{{ t.upload_shared_label }}</label>
+      </div>
+    </div>
+    {% endif %}
+
+    <div style="display:flex; gap:12px; margin-top:8px;">
+      <button type="submit" class="btn btn-primary">{{ t.upload_submit }}</button>
+      <a href="{{ url_for('main.dashboard') }}" class="btn btn-ghost">{{ t.upload_cancel }}</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ t.userform_edit_title if user else t.userform_new_title }} — Admin{% endblock %}
+{% block content %}
+<div class="page-title">{{ t.userform_edit_title if user else t.userform_new_title }}</div>
+<div class="page-subtitle">
+  {% if user %}{{ t.userform_edit_subtitle }} {{ user.username }}.{% else %}{{ t.userform_new_subtitle }}{% endif %}
+</div>
+
+<div class="card" style="max-width:480px;">
+  <form method="POST">
+    {% if not user %}
+    <div class="form-group">
+      <label>{{ t.userform_username }}</label>
+      <input type="text" name="username" required autofocus/>
+    </div>
+    {% endif %}
+
+    <div class="form-group">
+      <label>{{ t.userform_email }}</label>
+      <input type="email" name="email" value="{{ user.email if user else '' }}" required/>
+    </div>
+
+    <div class="form-group">
+      <label>{{ t.userform_password }} {% if user %}<span style="color:var(--muted)">{{ t.userform_password_hint }}</span>{% endif %}</label>
+      <input type="password" name="password" {% if not user %}required{% endif %} minlength="6"/>
+    </div>
+
+    <div class="form-group">
+      <label>{{ t.userform_role }}</label>
+      <select name="role">
+        <option value="user"  {% if user and user.role == 'user'  %}selected{% endif %}>user</option>
+        <option value="admin" {% if user and user.role == 'admin' %}selected{% endif %}>admin</option>
+      </select>
+    </div>
+
+    {% if user %}
+    <div class="form-group">
+      <div class="checkbox-row">
+        <input type="checkbox" name="is_active" id="is_active" {% if user.is_active %}checked{% endif %}/>
+        <label for="is_active">{{ t.userform_active }}</label>
+      </div>
+    </div>
+    {% endif %}
+
+    <div style="display:flex; gap:12px; margin-top:8px;">
+      <button type="submit" class="btn btn-primary">{{ t.userform_btn_save if user else t.userform_btn_create }}</button>
+      <a href="{{ url_for('admin.index') }}" class="btn btn-ghost">{{ t.userform_btn_cancel }}</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

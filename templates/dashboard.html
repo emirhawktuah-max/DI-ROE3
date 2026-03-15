@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}{{ t.dashboard_title }} — DataFlow{% endblock %}
+{% block content %}
+<div class="page-title">{{ t.dashboard_title }}</div>
+<div class="page-subtitle">{{ t.dashboard_welcome }}, {{ current_user.username }}.</div>
+
+<div class="grid-3" style="margin-bottom:32px;">
+  <div class="card">
+    <div class="stat">
+      <span class="stat-val">{{ my_uploads|length }}</span>
+      <span class="stat-label">{{ t.dashboard_my_uploads }}</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="stat">
+      <span class="stat-val">{{ shared_uploads|length }}</span>
+      <span class="stat-label">{{ t.dashboard_shared }}</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="stat">
+      <span class="stat-val">{{ my_results|length }}</span>
+      <span class="stat-label">{{ t.dashboard_recent_results }}</span>
+    </div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">{{ t.dashboard_my_uploads }}</div>
+    {% if my_uploads %}
+    <table>
+      <thead><tr><th>{{ t.dashboard_file }}</th><th>{{ t.dashboard_rows }}</th><th>{{ t.dashboard_date }}</th><th></th></tr></thead>
+      <tbody>
+      {% for u in my_uploads %}
+      <tr>
+        <td>{{ u.original_filename }}</td>
+        <td>{{ u.row_count }}</td>
+        <td>{{ u.uploaded_at.strftime('%d %b') }}</td>
+        <td>
+          <a href="{{ url_for('main.choices', upload_id=u.id) }}" class="btn btn-ghost btn-sm">{{ t.dashboard_btn_process }}</a>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty">{{ t.dashboard_no_uploads }} <a href="{{ url_for('main.upload') }}" style="color:var(--accent)">{{ t.dashboard_upload_link }}</a></div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-title">{{ t.dashboard_shared }}</div>
+    {% if shared_uploads %}
+    <table>
+      <thead><tr><th>{{ t.dashboard_file }}</th><th>{{ t.dashboard_owner }}</th><th>{{ t.dashboard_rows }}</th><th></th></tr></thead>
+      <tbody>
+      {% for u in shared_uploads %}
+      <tr>
+        <td>{{ u.original_filename }}</td>
+        <td>{{ u.owner.username }}</td>
+        <td>{{ u.row_count }}</td>
+        <td>
+          <a href="{{ url_for('main.choices', upload_id=u.id) }}" class="btn btn-ghost btn-sm">{{ t.dashboard_btn_process }}</a>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty">{{ t.dashboard_no_shared }}</div>
+    {% endif %}
+  </div>
+</div>
+
+{% if my_results %}
+<div class="card" style="margin-top:8px;">
+  <div class="card-title">{{ t.dashboard_recent_results_title }}</div>
+  <table>
+    <thead><tr><th>{{ t.dashboard_result }}</th><th>{{ t.dashboard_file }}</th><th>{{ t.dashboard_date }}</th><th></th></tr></thead>
+    <tbody>
+    {% for r in my_results %}
+    <tr>
+      <td>#{{ r.id }}</td>
+      <td>{{ r.upload.original_filename }}</td>
+      <td>{{ r.created_at.strftime('%d %b %H:%M') }}</td>
+      <td><a href="{{ url_for('main.results', result_id=r.id) }}" class="btn btn-ghost btn-sm">{{ t.dashboard_btn_view }}</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div style="margin-top:24px;">
+  <a href="{{ url_for('main.upload') }}" class="btn btn-primary">{{ t.dashboard_btn_upload }}</a>
+</div>
+{% endblock %}

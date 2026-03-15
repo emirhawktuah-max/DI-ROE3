@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DataFlow — {{ t.login_title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f0f; --surface: #171717; --border: #2a2a2a;
+      --accent: #c8f07a; --text: #e8e8e8; --muted: #666;
+      --danger: #f07a7a; --radius: 6px;
+      --mono: 'DM Mono', monospace; --serif: 'Fraunces', serif;
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: var(--mono); font-size: 14px;
+      min-height: 100vh; display: grid; place-items: center;
+    }
+    .login-wrap { width: 100%; max-width: 380px; padding: 24px; }
+    .brand {
+      font-family: var(--serif); font-size: 36px; font-weight: 300;
+      color: var(--accent); margin-bottom: 4px; text-align: center;
+    }
+    .brand em { font-style: italic; font-weight: 300; }
+    .tagline { color: var(--muted); font-size: 12px; text-align: center; margin-bottom: 8px; }
+    .lang-row { text-align: center; margin-bottom: 32px; }
+    .lang-btn {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); font-family: var(--mono); font-size: 11px;
+      padding: 3px 10px; border-radius: 99px; cursor: pointer;
+      text-decoration: none; transition: all .15s;
+    }
+    .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .08em; }
+    input {
+      width: 100%; background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); padding: 10px 14px; border-radius: var(--radius);
+      font-family: var(--mono); font-size: 14px; outline: none; transition: border-color .15s;
+    }
+    input:focus { border-color: var(--accent); }
+    .btn {
+      width: 100%; padding: 12px; border-radius: var(--radius);
+      background: var(--accent); color: #0f0f0f; border: none;
+      font-family: var(--mono); font-size: 14px; cursor: pointer; transition: background .15s;
+    }
+    .btn:hover { background: #b5e060; }
+    .alert { padding: 10px 14px; border-radius: var(--radius); margin-bottom: 20px; font-size: 13px; }
+    .alert-error { background: #2e0f0f; border: 1px solid #5c1a1a; color: var(--danger); }
+  </style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="brand">Data<em>Flow</em></div>
+  <div class="tagline">{{ t.login_tagline }}</div>
+  <div class="lang-row">
+    <a href="{{ url_for('set_lang', lang=t.lang_code) }}" class="lang-btn">{{ t.lang_switch }}</a>
+  </div>
+  <div class="card">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+    <div class="alert alert-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+    {% endwith %}
+
+    <form method="POST">
+      <div class="form-group">
+        <label>{{ t.login_username }}</label>
+        <input type="text" name="username" autofocus autocomplete="username" required/>
+      </div>
+      <div class="form-group">
+        <label>{{ t.login_password }}</label>
+        <input type="password" name="password" autocomplete="current-password" required/>
+      </div>
+      <button type="submit" class="btn">{{ t.login_submit }}</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>

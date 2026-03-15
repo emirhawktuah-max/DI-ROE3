@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ t.admin_title }}{% endblock %}
+{% block content %}
+<div class="page-title">{{ t.admin_title }}</div>
+<div class="page-subtitle">{{ t.admin_subtitle }}</div>
+
+<div style="margin-bottom:20px;">
+  <a href="{{ url_for('admin.new_user') }}" class="btn btn-primary">{{ t.admin_btn_new }}</a>
+</div>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>{{ t.admin_col_username }}</th>
+        <th>{{ t.admin_col_email }}</th>
+        <th>{{ t.admin_col_role }}</th>
+        <th>{{ t.admin_col_status }}</th>
+        <th>{{ t.admin_col_created }}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for u in users %}
+    <tr>
+      <td>{{ u.username }}</td>
+      <td>{{ u.email }}</td>
+      <td><span class="tag tag-{{ u.role }}">{{ u.role }}</span></td>
+      <td>
+        {% if u.is_active %}
+          <span style="color:var(--accent); font-size:12px;">{{ t.admin_status_active }}</span>
+        {% else %}
+          <span style="color:var(--danger); font-size:12px;">{{ t.admin_status_disabled }}</span>
+        {% endif %}
+      </td>
+      <td>{{ u.created_at.strftime('%d %b %Y') }}</td>
+      <td style="display:flex; gap:8px;">
+        <a href="{{ url_for('admin.edit_user', user_id=u.id) }}" class="btn btn-ghost btn-sm">{{ t.admin_btn_edit }}</a>
+        {% if u.id != current_user.id %}
+        <form method="POST" action="{{ url_for('admin.delete_user', user_id=u.id) }}"
+          onsubmit="return confirm('{{ t.admin_btn_delete }} {{ u.username }}?')">
+          <button type="submit" class="btn btn-danger btn-sm">{{ t.admin_btn_delete }}</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

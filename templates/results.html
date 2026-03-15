@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ t.results_title }} #{{ result.id }} — DataFlow{% endblock %}
+{% block content %}
+<div class="page-title">{{ t.results_title }} <span style="color:var(--muted); font-size:20px;">#{{ result.id }}</span></div>
+<div class="page-subtitle">
+  {{ result.upload.original_filename }} &middot; {{ result.created_at.strftime('%d %b %Y %H:%M') }}
+</div>
+
+<div class="card">
+  <div class="card-title">{{ t.results_summary }}</div>
+  <p style="line-height:1.7; color:var(--text);">{{ output.summary }}</p>
+</div>
+
+<div class="card">
+  <div class="card-title">{{ t.results_choices }}</div>
+  <table>
+    <thead><tr><th>{{ t.results_param }}</th><th>{{ t.results_value }}</th></tr></thead>
+    <tbody>
+    {% for k, v in choices.items() %}
+    <tr><td>{{ k }}</td><td>{{ v }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if output.stats %}
+<div class="card">
+  <div class="card-title">{{ t.results_stats }}</div>
+  <table>
+    <thead><tr><th>{{ t.results_col }}</th><th>{{ t.results_min }}</th><th>{{ t.results_max }}</th><th>{{ t.results_mean }}</th></tr></thead>
+    <tbody>
+    {% for col, s in output.stats.items() %}
+    <tr>
+      <td>{{ col }}</td>
+      <td>{{ s.min }}</td>
+      <td>{{ s.max }}</td>
+      <td>{{ s.mean }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if output.class_breakdown %}
+<div class="card">
+  <div class="card-title">{{ t.results_class_breakdown }}</div>
+  <table>
+    <thead><tr><th>{{ t.results_class }}</th><th>{{ t.results_count }}</th></tr></thead>
+    <tbody>
+    {% for cls, cnt in output.class_breakdown.items() %}
+    <tr><td>{{ cls }}</td><td>{{ cnt }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if output.table %}
+<div class="card">
+  <div class="card-title">{{ t.results_preview }}</div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          {% for col in output.columns %}
+          <th>{{ col }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in output.table %}
+        <tr>
+          {% for col in output.columns %}
+          <td>{{ row[col] }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<div style="display:flex; gap:12px; margin-top:8px;">
+  <a href="{{ url_for('main.choices', upload_id=result.upload_id) }}" class="btn btn-ghost">{{ t.results_btn_again }}</a>
+  <a href="{{ url_for('main.dashboard') }}" class="btn btn-ghost">{{ t.results_btn_dashboard }}</a>
+</div>
+{% endblock %}
