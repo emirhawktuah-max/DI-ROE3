@@ -42,6 +42,7 @@ def create_app():
     app.jinja_env.filters['from_json'] = _json.loads
 
     with app.app_context():
+        from models import SavedRoster  # ensure table is created
         db.create_all()
         seed_admin()
 

@@ -586,14 +586,15 @@ def roster_view():
 
     group_stats = [{'avg_reso': _avg_reso(g), 'count': len(g)} for g in groups]
 
-    # Store full player pool for override dropdowns (clean copy)
-    full_pool_clean = []
-    for p in all_players:
-        pc = {k: v for k, v in p.items() if not k.startswith('_')}
-        full_pool_clean.append(pc)
+    # Strip internal _ keys from groups and pool before passing to template
+    def _clean(p):
+        return {k: v for k, v in p.items() if not k.startswith('_')}
+
+    clean_groups = [[_clean(p) for p in g] for g in groups]
+    full_pool_clean = [_clean(p) for p in all_players]
 
     return render_template('roster_view.html',
-                           groups=groups,
+                           groups=clean_groups,
                            group_stats=group_stats,
                            tier_labels=tier_labels,
                            columns=columns_used or [],
@@ -637,18 +638,24 @@ def roster_save():
     today = date.today().strftime('%Y-%m-%d')
     name  = f"{current_user.username}_{today}"
 
-    sr = SavedRoster(
-        name=name,
-        created_by=current_user.id,
-        battle_type=battle_type,
-        config=json.dumps(config),
-        groups_data=groups_json,
-        columns_data=columns_json,
-        player_pool=pool_json,
-        overrides='{}',
-    )
-    db.session.add(sr)
-    db.session.commit()
+    try:
+        sr = SavedRoster(
+            name=name,
+            created_by=current_user.id,
+            battle_type=battle_type,
+            config=json.dumps(config),
+            groups_data=groups_json,
+            columns_data=columns_json,
+            player_pool=pool_json,
+            overrides='{}',
+        )
+        db.session.add(sr)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Could not save roster: {e}', 'error')
+        return redirect(url_for('main.roster_view'))
+
     flash(f'{tr["roster_saved"]} "{name}"', 'success')
     return redirect(url_for('main.saved_roster_view', roster_id=sr.id))
 
