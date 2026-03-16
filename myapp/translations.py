@@ -12,7 +12,7 @@ TRANSLATIONS = {
         'login_username': 'Username',
         'login_password': 'Password',
         'login_submit': 'Sign in →',
-        'login_tagline': 'ZemstaEmira · Clan Management',
+        'login_tagline': 'Ranking workspace',
 
         # Dashboard
         'dashboard_title': 'Dashboard',
@@ -232,11 +232,11 @@ TRANSLATIONS = {
         'opt_10': '10',
 
 # Dashboard instructions
-        'instructions_title': 'How to use ZemstaEmira',
+        'instructions_title': 'How to use DataFlow',
         'instructions': [
             ('Upload the file', 'Use the Upload File button in the nav — upload the unmodified export from the game.'),
             ('Mark attendance (optional)', 'Go to My Uploads → View Table and mark who will be Online. Hit Save at the bottom of the page.'),
-            ('Generate Rosters', 'Go to Generate Rosters. Make your choices and hit Generate. Don\'t forget to save your Roster!'),
+            ('Generate Rosters', 'Go to Generate Rosters. Make your choices and hit Generate.'),
             ('Manual overrides (optional)', 'Go to Saved Rosters → View — you can swap individual players here. Remember to save changes at the bottom.'),
             ('Export to Excel (optional)', 'Go to Saved Rosters and hit Export Excel on the roster you want.'),
             ('Mandatory', 'Tell Emir how cool and smart he is 😎'),
@@ -248,7 +248,7 @@ TRANSLATIONS = {
         ],
 
         # Footer
-        'footer': 'ZemstaEmira · built with Flask',
+        'footer': 'DataFlow · built with Flask',
 
         # Language toggle
         'lang_switch': 'Polski',
@@ -267,7 +267,7 @@ TRANSLATIONS = {
         'login_username': 'Nazwa użytkownika',
         'login_password': 'Hasło',
         'login_submit': 'Zaloguj się →',
-        'login_tagline': 'ZemstaEmira · Zarządzanie klanem',
+        'login_tagline': 'System rankingowy',
 
         # Dashboard
         'dashboard_title': 'Panel',
@@ -487,11 +487,11 @@ TRANSLATIONS = {
         'opt_10': '10',
 
 # Dashboard instructions
-        'instructions_title': 'Jak korzystać z ZemstaEmira',
+        'instructions_title': 'Jak korzystać z DataFlow',
         'instructions': [
             ('Wgraj plik', 'Użyj przycisku Wgraj plik w nawigacji — wgraj niezmodyfikowany eksport z gry.'),
             ('Zaznacz obecność (opcjonalnie)', 'Przejdź do Moje pliki → Zobacz tabelę i zaznacz kto będzie Online. Kliknij Zapisz na dole strony.'),
-            ('Generuj składy', 'Przejdź do Generuj Składy. Dokonaj wyborów i kliknij Generuj. Nie zapomnij zapisać składu!'),
+            ('Generuj składy', 'Przejdź do Generuj Składy. Dokonaj wyborów i kliknij Generuj.'),
             ('Ręczne zmiany (opcjonalnie)', 'Przejdź do Zapisane składy → Zobacz — możesz tu ręcznie zmieniać graczy. Pamiętaj o zapisaniu zmian na dole.'),
             ('Eksport do Excela (opcjonalnie)', 'Przejdź do Zapisane składy i kliknij Eksportuj Excel przy wybranym składzie.'),
             ('Obowiązkowo', 'Powiedz Emirowi jakie to wszystko fajne i jak jest genialny 😎'),
@@ -503,7 +503,7 @@ TRANSLATIONS = {
         ],
 
         # Footer
-        'footer': 'ZemstaEmira · zbudowano z Flask',
+        'footer': 'DataFlow · zbudowano z Flask',
 
         # Language toggle
         'lang_switch': 'English',

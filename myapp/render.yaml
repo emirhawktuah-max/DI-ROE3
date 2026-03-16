@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: zemstaemira
+    name: dataflow
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
