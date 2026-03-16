@@ -906,7 +906,7 @@ def saved_roster_export(roster_id):
         for gi, group in enumerate(display_groups):
             tier = (tier_labels[gi]
                     if tier_labels and gi < len(tier_labels) else None)
-            sname = f'Battle {gi+1}' + (f' [{tier}]' if tier else '')
+            sname = f'Battle {gi+1}' + (f' T{tier}' if tier else '')
             ws = wb.create_sheet(sname[:31])
             ws.sheet_view.showGridLines = False
 
