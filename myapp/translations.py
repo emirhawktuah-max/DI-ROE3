@@ -231,6 +231,22 @@ TRANSLATIONS = {
         'opt_7': '7',
         'opt_10': '10',
 
+# Dashboard instructions
+        'instructions_title': 'How to use DataFlow',
+        'instructions': [
+            ('Upload the file', 'Use the Upload File button in the nav — upload the unmodified export from the game.'),
+            ('Mark attendance (optional)', 'Go to My Uploads → View Table and mark who will be Online. Hit Save at the bottom of the page.'),
+            ('Generate Rosters', 'Go to Generate Rosters. Make your choices and hit Generate.'),
+            ('Manual overrides (optional)', 'Go to Saved Rosters → View — you can swap individual players here. Remember to save changes at the bottom.'),
+            ('Export to Excel (optional)', 'Go to Saved Rosters and hit Export Excel on the roster you want.'),
+            ('Mandatory', 'Tell Emir how cool and smart he is 😎'),
+        ],
+        'instructions_crash_title': 'In the unlikely event of a crash…',
+        'instructions_crash': [
+            'Go touch some grass. Look at the sky. Breathe deeply. Enjoy life.',
+            'Start from the beginning — this app is ultra-cheap, hosted for free. Stability is not part of the offering.',
+        ],
+
         # Footer
         'footer': 'DataFlow · built with Flask',
 
@@ -469,6 +485,22 @@ TRANSLATIONS = {
         'opt_even_dist': 'Równy rozkład',
         'opt_7': '7',
         'opt_10': '10',
+
+# Dashboard instructions
+        'instructions_title': 'Jak korzystać z DataFlow',
+        'instructions': [
+            ('Wgraj plik', 'Użyj przycisku Wgraj plik w nawigacji — wgraj niezmodyfikowany eksport z gry.'),
+            ('Zaznacz obecność (opcjonalnie)', 'Przejdź do Moje pliki → Zobacz tabelę i zaznacz kto będzie Online. Kliknij Zapisz na dole strony.'),
+            ('Generuj składy', 'Przejdź do Generuj Składy. Dokonaj wyborów i kliknij Generuj.'),
+            ('Ręczne zmiany (opcjonalnie)', 'Przejdź do Zapisane składy → Zobacz — możesz tu ręcznie zmieniać graczy. Pamiętaj o zapisaniu zmian na dole.'),
+            ('Eksport do Excela (opcjonalnie)', 'Przejdź do Zapisane składy i kliknij Eksportuj Excel przy wybranym składzie.'),
+            ('Obowiązkowo', 'Powiedz Emirowi jakie to wszystko fajne i jak jest genialny 😎'),
+        ],
+        'instructions_crash_title': 'W mało prawdopodobnym przypadku awarii…',
+        'instructions_crash': [
+            'Wyjdź na trawę. Popatrz w niebo. Oddech głęboko. Ciesz się życiem.',
+            'Zacznij od nowa — aplikacja jest ultra-tania, hostowana za darmo. Stabilność nie jest częścią oferty.',
+        ],
 
         # Footer
         'footer': 'DataFlow · zbudowano z Flask',
