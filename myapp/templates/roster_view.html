@@ -43,9 +43,9 @@
 <div class="page-title">{{ t.roster_view_title }}<span class="battle-badge">{{ battle_type }}{% if clan_mode != 'Standard' %} · {{ clan_mode }}{% endif %}</span></div>
 
 <div class="config-pills">
-  <span class="config-pill">{{ t.roster_priority_label }}: <strong>{{ priority }}</strong></span>
-  <span class="config-pill">{{ t.roster_online_label }}: <strong>{{ online_only }}</strong></span>
-  <span class="config-pill">{{ t.roster_dist_label }}: <strong>{{ distribution }}</strong></span>
+  <span class="config-pill">{{ t.roster_priority_label }}: <strong>{{ opt_labels[priority] }}</strong></span>
+  <span class="config-pill">{{ t.roster_online_label }}: <strong>{{ opt_labels[online_only] }}</strong></span>
+  <span class="config-pill">{{ t.roster_dist_label }}: <strong>{{ opt_labels[distribution] }}</strong></span>
   <span class="config-pill">{{ t.roster_num_battles_label }}: <strong>{{ num_battles }}</strong></span>
   <span class="config-pill">{{ t.roster_total_players }}: <strong>{{ total_players }}</strong></span>
   {% for f in source_files %}<span class="config-pill">{{ f }}</span>{% endfor %}

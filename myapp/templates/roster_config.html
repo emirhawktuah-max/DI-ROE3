@@ -104,7 +104,7 @@
             <label class="option-pill">
               <input type="radio" name="battle_type" value="{{ bt }}"
                      onchange="onBattleType(this.value)" required/>
-              <span class="option-pill-label">{{ bt }}</span>
+              <span class="option-pill-label">{{ opt_labels[bt] }}</span>
             </label>
             {% endfor %}
           </div>
@@ -118,7 +118,7 @@
               {% for n in roe_battles_options %}
               <label class="option-pill">
                 <input type="radio" name="roe_battles" value="{{ n }}" {% if n=='10' %}checked{% endif %}/>
-                <span class="option-pill-label">{{ n }}</span>
+                <span class="option-pill-label">{{ opt_labels[n] }}</span>
               </label>
               {% endfor %}
             </div>
@@ -133,7 +133,7 @@
               {% for m in clan_battle_modes %}
               <label class="option-pill">
                 <input type="radio" name="clan_mode" value="{{ m }}" {% if m=='Standard' %}checked{% endif %}/>
-                <span class="option-pill-label">{{ m }}</span>
+                <span class="option-pill-label">{{ opt_labels[m] }}</span>
               </label>
               {% endfor %}
             </div>
@@ -149,7 +149,7 @@
             {% for opt in priority_options %}
             <label class="option-pill">
               <input type="radio" name="priority" value="{{ opt }}" required/>
-              <span class="option-pill-label">{{ opt }}</span>
+              <span class="option-pill-label">{{ opt_labels[opt] }}</span>
             </label>
             {% endfor %}
           </div>
@@ -164,7 +164,7 @@
             {% for opt in online_options %}
             <label class="option-pill">
               <input type="radio" name="online_only" value="{{ opt }}" required/>
-              <span class="option-pill-label">{{ opt }}</span>
+              <span class="option-pill-label">{{ opt_labels[opt] }}</span>
             </label>
             {% endfor %}
           </div>
@@ -179,7 +179,7 @@
             {% for opt in dist_options %}
             <label class="option-pill">
               <input type="radio" name="distribution" value="{{ opt }}" required/>
-              <span class="option-pill-label">{{ opt }}</span>
+              <span class="option-pill-label">{{ opt_labels[opt] }}</span>
             </label>
             {% endfor %}
           </div>

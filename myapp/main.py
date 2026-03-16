@@ -460,6 +460,23 @@ def roster_config():
         return redirect(url_for('main.roster_select'))
 
     def _render_config(**kw):
+        # Build value->label map using current language
+        tr = t()
+        opt_labels = {
+            'RoE':                    tr['opt_roe'],
+            'Clan Battle':            tr['opt_clan_battle'],
+            'Standard':               tr['opt_standard'],
+            '8 4 2 1':                tr['opt_8421'],
+            'Rezonowanie':            tr['opt_reso'],
+            'Class':                  tr['opt_class'],
+            'Only confirmed online':  tr['opt_online_only'],
+            'Prioritize Online':      tr['opt_prioritize_online'],
+            'All players':            tr['opt_all_players'],
+            'Max power':              tr['opt_max_power'],
+            'Even distribution':      tr['opt_even_dist'],
+            '7':                      tr['opt_7'],
+            '10':                     tr['opt_10'],
+        }
         return render_template('roster_config.html',
                                uploads=uploads, ids_str=ids_str,
                                battle_types=BATTLE_TYPES,
@@ -469,6 +486,7 @@ def roster_config():
                                dist_options=DIST_OPTIONS,
                                roe_battles_options=ROE_BATTLES_OPTIONS,
                                all_classes=ALL_CLASSES,
+                               opt_labels=opt_labels,
                                **kw)
 
     if request.method == 'POST':
@@ -606,6 +624,17 @@ def roster_view():
     with open(tmp_path, 'wb') as f:
         pickle.dump(roster_tmp, f)
 
+    tr = t()
+    opt_labels = {
+        'RoE': tr['opt_roe'], 'Clan Battle': tr['opt_clan_battle'],
+        'Standard': tr['opt_standard'], '8 4 2 1': tr['opt_8421'],
+        'Rezonowanie': tr['opt_reso'], 'Class': tr['opt_class'],
+        'Only confirmed online': tr['opt_online_only'],
+        'Prioritize Online': tr['opt_prioritize_online'],
+        'All players': tr['opt_all_players'],
+        'Max power': tr['opt_max_power'],
+        'Even distribution': tr['opt_even_dist'],
+    }
     return render_template('roster_view.html',
                            groups=clean_groups,
                            group_stats=group_stats,
@@ -620,7 +649,8 @@ def roster_view():
                            active_classes=active_classes,
                            source_files=source_files,
                            total_players=len(pool),
-                           full_pool=full_pool_clean)
+                           full_pool=full_pool_clean,
+                           opt_labels=opt_labels)
 
 
 @main_bp.route('/roster/save', methods=['POST'])

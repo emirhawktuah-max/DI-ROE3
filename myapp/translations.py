@@ -216,6 +216,21 @@ TRANSLATIONS = {
         'saved_rosters_empty': 'No saved rosters yet.',
         'roster_export_btn': 'Export Excel',
 
+# Roster option labels
+        'opt_roe': 'RoE',
+        'opt_clan_battle': 'Clan Battle',
+        'opt_standard': 'Standard',
+        'opt_8421': '8 4 2 1',
+        'opt_reso': 'Rezonowanie',
+        'opt_class': 'Class',
+        'opt_online_only': 'Only confirmed online',
+        'opt_prioritize_online': 'Prioritize Online',
+        'opt_all_players': 'All players',
+        'opt_max_power': 'Max power',
+        'opt_even_dist': 'Even distribution',
+        'opt_7': '7',
+        'opt_10': '10',
+
         # Footer
         'footer': 'DataFlow · built with Flask',
 
@@ -439,6 +454,21 @@ TRANSLATIONS = {
         'saved_rosters_col_date': 'Data',
         'saved_rosters_empty': 'Brak zapisanych składów.',
         'roster_export_btn': 'Eksportuj Excel',
+
+# Roster option labels
+        'opt_roe': 'RoE',
+        'opt_clan_battle': 'Clan Battle',
+        'opt_standard': 'Standard',
+        'opt_8421': '8 4 2 1',
+        'opt_reso': 'Rezonowanie',
+        'opt_class': 'Klasa',
+        'opt_online_only': 'Tylko potwierdzeni online',
+        'opt_prioritize_online': 'Priorytet online',
+        'opt_all_players': 'Wszyscy gracze',
+        'opt_max_power': 'Maksymalna siła',
+        'opt_even_dist': 'Równy rozkład',
+        'opt_7': '7',
+        'opt_10': '10',
 
         # Footer
         'footer': 'DataFlow · zbudowano z Flask',
