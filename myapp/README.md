@@ -1,4 +1,4 @@
-# DataFlow
+# ZemstaEmira
 
 A Flask web service for CSV upload, user-configurable processing, and results display.
 
@@ -75,7 +75,7 @@ Must return a dict with:
 2. Go to https://render.com → New → Web Service
 3. Connect your repo
 4. Render auto-detects `render.yaml` — click **Deploy**
-5. Done. Your app is live at `https://dataflow-xxxx.onrender.com`
+5. Done. Your app is live at `https://zemstaemira-xxxx.onrender.com`
 
 > **Note:** Render's free tier uses ephemeral storage — uploaded files and the SQLite DB reset on redeploy.  
 > For persistent storage, upgrade to a paid tier or switch to PostgreSQL + cloud file storage.
