@@ -17,16 +17,79 @@
     body {
       background: var(--bg); color: var(--text);
       font-family: var(--mono); font-size: 14px;
-      min-height: 100vh; display: grid; place-items: center;
+      min-height: 100vh; display: flex; flex-direction: column;
     }
-    .login-wrap { width: 100%; max-width: 380px; padding: 24px; }
+
+    /* ---- Hero banner ---- */
+    .hero {
+      width: 100%;
+      min-height: 340px;
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background-color: #1a0a05;
+      background-image:
+        url('https://cdn.mos.cms.futurecdn.net/mGmyUwnUaVSHnQCaFRXYh9.jpg'),
+        linear-gradient(135deg, #1a0505 0%, #0a0a1a 50%, #1a0a05 100%);
+      background-size: cover;
+      background-position: center 20%;
+      filter: brightness(0.55) saturate(1.2);
+    }
+    .hero-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom,
+        rgba(15,15,15,0.1) 0%,
+        rgba(15,15,15,0.0) 30%,
+        rgba(15,15,15,0.7) 70%,
+        rgba(15,15,15,1.0) 100%);
+    }
+    .hero-text {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 0 24px 40px;
+    }
+    .hero-title {
+      font-family: var(--serif);
+      font-size: clamp(36px, 7vw, 72px);
+      font-weight: 600;
+      letter-spacing: -1px;
+      color: #c8f07a;
+      text-shadow:
+        0 0 40px rgba(200,240,122,0.5),
+        0 2px 8px rgba(0,0,0,0.8);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .hero-sub {
+      font-size: 13px;
+      color: rgba(200,240,122,0.6);
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+
+    /* ---- Login card area ---- */
+    .login-area {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      padding: 32px 24px 40px;
+    }
+    .login-wrap { width: 100%; max-width: 380px; }
+
     .brand {
-      font-family: var(--serif); font-size: 36px; font-weight: 300;
+      font-family: var(--serif); font-size: 28px; font-weight: 300;
       color: var(--accent); margin-bottom: 4px; text-align: center;
     }
-    .brand em { font-style: italic; font-weight: 300; }
+    .brand em { font-style: italic; }
     .tagline { color: var(--muted); font-size: 12px; text-align: center; margin-bottom: 8px; }
-    .lang-row { text-align: center; margin-bottom: 32px; }
+    .lang-row { text-align: center; margin-bottom: 24px; }
     .lang-btn {
       background: transparent; border: 1px solid var(--border);
       color: var(--muted); font-family: var(--mono); font-size: 11px;
@@ -34,9 +97,13 @@
       text-decoration: none; transition: all .15s;
     }
     .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; }
-    .form-group { margin-bottom: 20px; }
-    label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .08em; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px;
+    }
+    .form-group { margin-bottom: 18px; }
+    label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 6px;
+            text-transform: uppercase; letter-spacing: .08em; }
     input {
       width: 100%; background: var(--bg); border: 1px solid var(--border);
       color: var(--text); padding: 10px 14px; border-radius: var(--radius);
@@ -49,11 +116,24 @@
       font-family: var(--mono); font-size: 14px; cursor: pointer; transition: background .15s;
     }
     .btn:hover { background: #b5e060; }
-    .alert { padding: 10px 14px; border-radius: var(--radius); margin-bottom: 20px; font-size: 13px; }
+    .alert { padding: 10px 14px; border-radius: var(--radius); margin-bottom: 18px; font-size: 13px; }
     .alert-error { background: #2e0f0f; border: 1px solid #5c1a1a; color: var(--danger); }
   </style>
 </head>
 <body>
+
+<!-- Hero banner -->
+<div class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-overlay"></div>
+  <div class="hero-text">
+    <div class="hero-title">Zemsta Emira</div>
+    <div class="hero-sub">DataFlow · Clan Management</div>
+  </div>
+</div>
+
+<!-- Login form -->
+<div class="login-area">
 <div class="login-wrap">
   <div class="brand">Data<em>Flow</em></div>
   <div class="tagline">{{ t.login_tagline }}</div>
@@ -79,6 +159,7 @@
       <button type="submit" class="btn">{{ t.login_submit }}</button>
     </form>
   </div>
+</div>
 </div>
 </body>
 </html>
