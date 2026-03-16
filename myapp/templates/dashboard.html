@@ -1,60 +1,86 @@
 {% extends "base.html" %}
-{% block title %}{{ t.dashboard_title }} — DataFlow{% endblock %}
+{% block title %}{{ t.dashboard_title }} — ZemstaEmira{% endblock %}
+{% block head %}
+<style>
+@media (max-width: 900px) {
+  .instructions-layout { grid-template-columns: 1fr !important; }
+  .instructions-layout .banner-col { display: none; }
+}
+@media (max-width: 1200px) and (min-width: 901px) {
+  .instructions-layout { grid-template-columns: 160px 1fr 160px !important; }
+}
+</style>
+{% endblock %}
+{% block head %}
+<style>
+  @media (max-width: 800px) {
+    .dash-instructions-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .dash-instructions-grid .dash-img { display: none; }
+  }
+</style>
+{% endblock %}
 {% block content %}
 <div class="page-title">{{ t.dashboard_title }}</div>
 <div class="page-subtitle">{{ t.dashboard_welcome }}, {{ current_user.username }}.</div>
 
 
-<!-- Instructions -->
-<div class="card" style="margin-bottom:32px;">
-  <div class="card-title">{{ t.instructions_title }}</div>
-  <ol style="padding-left:0; list-style:none; margin:0; display:flex; flex-direction:column; gap:10px;">
-    {% for step_title, step_body in t.instructions %}
-    <li style="display:flex; gap:14px; align-items:flex-start;">
-      <span style="
-        flex-shrink:0;
-        width:24px; height:24px;
-        border-radius:50%;
-        background:rgba(200,240,122,.12);
-        border:1px solid var(--accent);
-        color:var(--accent);
-        font-size:11px;
-        font-weight:500;
-        display:flex; align-items:center; justify-content:center;">
-        {{ loop.index }}
-      </span>
-      <span style="line-height:1.6; font-size:13px;">
-        <strong style="color:var(--text);">{{ step_title }}</strong>
-        <span style="color:var(--muted); margin-left:6px;">{{ step_body }}</span>
-      </span>
-    </li>
-    {% endfor %}
-  </ol>
+<!-- Instructions + split image -->
+<div style="display:grid; grid-template-columns:220px 1fr 220px; gap:16px; margin-bottom:32px; align-items:stretch;">
 
-  <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">
-    <div style="font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--danger); margin-bottom:10px;">
-      {{ t.instructions_crash_title }}
-    </div>
-    <ol style="padding-left:0; list-style:none; margin:0; display:flex; flex-direction:column; gap:8px;">
-      {% for line in t.instructions_crash %}
+  <!-- Left image half -->
+  <div class="banner-col" style="border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); min-height:200px;">
+    <img src="{{ url_for('static', filename='di_left.png') }}"
+         alt="" style="width:100%; height:100%; display:block; object-fit:cover; object-position:right center;"/>
+  </div>
+
+  <!-- Center: instructions card -->
+  <div class="card" style="margin-bottom:0;">
+    <div class="card-title">{{ t.instructions_title }}</div>
+    <ol style="padding-left:0; list-style:none; margin:0; display:flex; flex-direction:column; gap:10px;">
+      {% for step_title, step_body in t.instructions %}
       <li style="display:flex; gap:14px; align-items:flex-start;">
-        <span style="
-          flex-shrink:0;
-          width:20px; height:20px;
-          border-radius:50%;
-          background:rgba(240,122,122,.1);
-          border:1px solid var(--danger);
-          color:var(--danger);
-          font-size:10px;
-          font-weight:500;
-          display:flex; align-items:center; justify-content:center;">
-          {{ loop.index | lower }}
+        <span style="flex-shrink:0; width:24px; height:24px; border-radius:50%;
+                     background:rgba(200,240,122,.12); border:1px solid var(--accent);
+                     color:var(--accent); font-size:11px; font-weight:500;
+                     display:flex; align-items:center; justify-content:center;">
+          {{ loop.index }}
         </span>
-        <span style="font-size:12px; color:var(--muted); line-height:1.6;">{{ line }}</span>
+        <span style="line-height:1.6; font-size:13px;">
+          <strong style="color:var(--text);">{{ step_title }}</strong>
+          <span style="color:var(--muted); margin-left:6px;">{{ step_body }}</span>
+        </span>
       </li>
       {% endfor %}
     </ol>
+
+    <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">
+      <div style="font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--danger); margin-bottom:10px;">
+        {{ t.instructions_crash_title }}
+      </div>
+      <ol style="padding-left:0; list-style:none; margin:0; display:flex; flex-direction:column; gap:8px;">
+        {% for line in t.instructions_crash %}
+        <li style="display:flex; gap:14px; align-items:flex-start;">
+          <span style="flex-shrink:0; width:20px; height:20px; border-radius:50%;
+                       background:rgba(240,122,122,.1); border:1px solid var(--danger);
+                       color:var(--danger); font-size:10px; font-weight:500;
+                       display:flex; align-items:center; justify-content:center;">
+            {{ loop.index }}
+          </span>
+          <span style="font-size:12px; color:var(--muted); line-height:1.6;">{{ line }}</span>
+        </li>
+        {% endfor %}
+      </ol>
+    </div>
   </div>
+
+  <!-- Right image half -->
+  <div class="banner-col" style="border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); min-height:200px;">
+    <img src="{{ url_for('static', filename='di_right.png') }}"
+         alt="" style="width:100%; height:100%; display:block; object-fit:cover; object-position:left center;"/>
+  </div>
+
 </div>
 
 <div class="grid-3" style="margin-bottom:32px;">
@@ -77,6 +103,23 @@
     </div>
   </div>
 </div>
+
+  <!-- Right image half -->
+  <div class="banner-col" style="border-radius:var(--radius); overflow:hidden; border:1px solid var(--border);">
+    <img src="{{ url_for('static', filename='di_right.png') }}"
+         alt="" style="width:100%; height:100%; display:block; object-fit:cover; object-position:left center;"/>
+  </div>
+
+</div>
+
+<!-- Right side image -->
+<div class="dash-img" style="border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); flex-shrink:0;">
+  <img src="{{ url_for('static', filename='di_banner.png') }}"
+       alt="Diablo Immortal"
+       style="width:100%; display:block; object-fit:cover; max-height:520px;"/>
+</div>
+
+</div><!-- end grid -->
 
 <div class="grid-2">
   <div class="card">

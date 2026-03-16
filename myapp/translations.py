@@ -1,7 +1,7 @@
 TRANSLATIONS = {
     'en': {
         # Nav
-        'nav_dashboard': 'Dashboard',
+        'nav_dashboard': 'ZemstaEmira',
         'nav_upload': 'Upload File',
         'nav_my_uploads': 'My Uploads',
         'nav_admin': 'Admin',
@@ -15,7 +15,7 @@ TRANSLATIONS = {
         'login_tagline': 'Ranking workspace',
 
         # Dashboard
-        'dashboard_title': 'Dashboard',
+        'dashboard_title': 'ZemstaEmira',
         'dashboard_welcome': 'Welcome back',
         'dashboard_my_uploads': 'My uploads',
         'dashboard_shared': 'Shared datasets',
@@ -236,7 +236,7 @@ TRANSLATIONS = {
         'instructions': [
             ('Upload the file', 'Use the Upload File button in the nav — upload the unmodified export from the game.'),
             ('Mark attendance (optional)', 'Go to My Uploads → View Table and mark who will be Online. Hit Save at the bottom of the page.'),
-            ('Generate Rosters', 'Go to Generate Rosters. Make your choices and hit Generate.'),
+            ('Generate Rosters', 'Go to Generate Rosters. Make your choices and hit Generate. Remember to save your Roster!'),
             ('Manual overrides (optional)', 'Go to Saved Rosters → View — you can swap individual players here. Remember to save changes at the bottom.'),
             ('Export to Excel (optional)', 'Go to Saved Rosters and hit Export Excel on the roster you want.'),
             ('Mandatory', 'Tell Emir how cool and smart he is 😎'),
@@ -256,7 +256,7 @@ TRANSLATIONS = {
     },
     'pl': {
         # Nav
-        'nav_dashboard': 'Panel',
+        'nav_dashboard': 'ZemstaEmira',
         'nav_upload': 'Wgraj plik',
         'nav_my_uploads': 'Moje pliki',
         'nav_admin': 'Admin',
@@ -270,7 +270,7 @@ TRANSLATIONS = {
         'login_tagline': 'System rankingowy',
 
         # Dashboard
-        'dashboard_title': 'Panel',
+        'dashboard_title': 'ZemstaEmira',
         'dashboard_welcome': 'Witaj z powrotem',
         'dashboard_my_uploads': 'Moje pliki',
         'dashboard_shared': 'Wspólne zestawy',
@@ -491,7 +491,7 @@ TRANSLATIONS = {
         'instructions': [
             ('Wgraj plik', 'Użyj przycisku Wgraj plik w nawigacji — wgraj niezmodyfikowany eksport z gry.'),
             ('Zaznacz obecność (opcjonalnie)', 'Przejdź do Moje pliki → Zobacz tabelę i zaznacz kto będzie Online. Kliknij Zapisz na dole strony.'),
-            ('Generuj składy', 'Przejdź do Generuj Składy. Dokonaj wyborów i kliknij Generuj.'),
+            ('Generuj składy', 'Przejdź do Generuj Składy. Dokonaj wyborów i kliknij Generuj. Pamiętaj o zapisaniu składu!'),
             ('Ręczne zmiany (opcjonalnie)', 'Przejdź do Zapisane składy → Zobacz — możesz tu ręcznie zmieniać graczy. Pamiętaj o zapisaniu zmian na dole.'),
             ('Eksport do Excela (opcjonalnie)', 'Przejdź do Zapisane składy i kliknij Eksportuj Excel przy wybranym składzie.'),
             ('Obowiązkowo', 'Powiedz Emirowi jakie to wszystko fajne i jak jest genialny 😎'),
