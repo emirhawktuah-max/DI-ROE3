@@ -45,6 +45,48 @@
 }
 .override-select:focus{border-color:var(--accent);}
 .override-select.changed{border-color:var(--accent2);}
+.dup-row td { background: rgba(240,80,80,.15) !important; }
+.dup-row td:first-child { border-left: 3px solid #f07a7a; }
+.dup-name {
+  color: #f07a7a !important;
+  font-weight: 700 !important;
+  position: relative;
+}
+.dup-badge {
+  display: inline-block;
+  background: #f07a7a;
+  color: #0f0f0f;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 99px;
+  margin-left: 5px;
+  vertical-align: middle;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+#dup-banner {
+  display: none;
+  padding: 12px 16px;
+  background: #2e0f0f;
+  border: 1px solid #f07a7a;
+  border-radius: var(--radius);
+  color: #f07a7a;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+#dup-banner.visible { display: block; }
+#no-dup-banner {
+  display: none;
+  padding: 12px 16px;
+  background: #1a2e0f;
+  border: 1px solid #3a5c1a;
+  border-radius: var(--radius);
+  color: var(--accent);
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+#no-dup-banner.visible { display: block; }
 </style>
 {% endblock %}
 
@@ -92,7 +134,7 @@
         {% for col in columns %}
           {% set val = player.get(col, '') %}
           {% if col == 'Nazwa' %}
-            <td style="font-weight:500;font-size:12px;">{{ val }}</td>
+            <td class="name-cell" data-name="{{ val }}" style="font-weight:500;font-size:12px;">{{ val }}</td>
           {% elif col == 'Klasa' %}
             <td><span class="class-badge cls-{{ val|replace(' ','_') if val else 'default' }}">{{ val }}</span></td>
           {% elif col == 'Ranking udziału' %}
@@ -118,8 +160,12 @@
   {% endfor %}
 </div>
 
-<div style="margin-top:28px;display:flex;gap:12px;">
+<div id="dup-banner"></div>
+<div id="no-dup-banner">✓ No duplicate names found.</div>
+
+<div style="margin-top:28px;display:flex;gap:12px;flex-wrap:wrap;">
   <button type="submit" class="btn btn-primary">{{ t.roster_save_overrides }} ✓</button>
+  <button type="button" class="btn btn-ghost" onclick="checkDuplicates()" id="dup-btn">⚠ Check Duplicates</button>
   <a href="{{ url_for('main.saved_rosters_list') }}" class="btn btn-ghost">← {{ t.saved_rosters_title }}</a>
   <a href="{{ url_for('main.saved_roster_export', roster_id=sr.id) }}" class="btn btn-ghost">{{ t.roster_export_btn }} ↓</a>
   <form method="POST" action="{{ url_for('main.saved_roster_delete', roster_id=sr.id) }}"
@@ -127,6 +173,64 @@
     <button type="submit" class="btn btn-danger">{{ t.manage_btn_delete }}</button>
   </form>
 </div>
+<script>
+function checkDuplicates() {
+  // Clear previous highlights
+  document.querySelectorAll('.dup-row').forEach(r => r.classList.remove('dup-row'));
+  document.querySelectorAll('.dup-badge').forEach(b => b.remove());
+  document.querySelectorAll('.name-cell').forEach(c => c.classList.remove('dup-name'));
+
+  // Count all names
+  const cells = document.querySelectorAll('.name-cell');
+  const counts = {};
+  cells.forEach(c => {
+    const name = c.dataset.name.trim();
+    if (name) counts[name] = (counts[name] || 0) + 1;
+  });
+
+  // Find duplicates
+  const dups = Object.entries(counts).filter(([n, c]) => c > 1);
+
+  const banner = document.getElementById('dup-banner');
+  const noBanner = document.getElementById('no-dup-banner');
+
+  if (dups.length === 0) {
+    banner.classList.remove('visible');
+    noBanner.classList.add('visible');
+    noBanner.textContent = '✓ No duplicate names found.';
+    return;
+  }
+
+  noBanner.classList.remove('visible');
+
+  const dupNames = new Set(dups.map(([n]) => n));
+  let total = 0;
+
+  cells.forEach(cell => {
+    const name = cell.dataset.name.trim();
+    if (dupNames.has(name)) {
+      cell.classList.add('dup-name');
+      cell.closest('tr').classList.add('dup-row');
+      // Add badge only once per cell
+      if (!cell.querySelector('.dup-badge')) {
+        const badge = document.createElement('span');
+        badge.className = 'dup-badge';
+        badge.textContent = 'DUP';
+        cell.appendChild(badge);
+      }
+      total++;
+    }
+  });
+
+  const names = dups.map(([n, c]) => `${n} (×${c})`).join(', ');
+  banner.textContent = `⚠ ${dups.length} duplicate name${dups.length > 1 ? 's' : ''} found — ${names}`;
+  banner.classList.add('visible');
+
+  // Scroll to first duplicate
+  const firstDup = document.querySelector('.dup-row');
+  if (firstDup) firstDup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+</script>
 </form>
 {% else %}
 <div class="card"><div class="empty">{{ t.roster_no_players }}</div></div>
