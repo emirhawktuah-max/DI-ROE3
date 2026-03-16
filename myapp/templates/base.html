@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>{% block title %}ZemstaEmira{% endblock %}</title>
+  <title>{% block title %}DataFlow{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet"/>
   <style>
@@ -204,7 +204,7 @@
 
 {% if current_user.is_authenticated %}
 <nav>
-  <a href="{{ url_for('main.dashboard') }}" class="nav-brand">ZemstaEmira</a>
+  <a href="{{ url_for('main.dashboard') }}" class="nav-brand">DataFlow</a>
   <div class="nav-links">
     <a href="{{ url_for('main.dashboard') }}">{{ t.nav_dashboard }}</a>
     <a href="{{ url_for('main.upload') }}">{{ t.nav_upload }}</a>
