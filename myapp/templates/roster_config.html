@@ -1,53 +1,68 @@
 {% extends "base.html" %}
 {% block title %}{{ t.roster_config_title }} — DataFlow{% endblock %}
-
 {% block head %}
 <style>
-.option-group {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 6px;
-}
-.option-pill {
-  position: relative;
-  cursor: pointer;
-}
-.option-pill input[type=radio] { display: none; }
+.config-layout { display:grid; grid-template-columns:1fr 260px; gap:20px; align-items:start; }
+@media(max-width:800px){ .config-layout{ grid-template-columns:1fr; } }
+
+.option-group { display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+.option-pill { position:relative; cursor:pointer; }
+.option-pill input[type=radio]{ display:none; }
 .option-pill-label {
-  display: inline-block;
-  padding: 8px 18px;
-  border: 1px solid var(--border);
-  border-radius: 99px;
-  font-size: 13px;
-  color: var(--muted);
-  cursor: pointer;
-  transition: all .15s;
-  user-select: none;
+  display:inline-block; padding:8px 18px; border:1px solid var(--border);
+  border-radius:99px; font-size:13px; color:var(--muted); cursor:pointer;
+  transition:all .15s; user-select:none;
 }
 .option-pill input[type=radio]:checked + .option-pill-label {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: rgba(200,240,122,.1);
+  border-color:var(--accent); color:var(--accent); background:rgba(200,240,122,.1);
 }
-.option-pill-label:hover { border-color: var(--text); color: var(--text); }
+.option-pill-label:hover{ border-color:var(--text); color:var(--text); }
 
 .conditional-field {
-  display: none;
-  margin-top: 0;
-  padding: 16px;
-  background: rgba(200,240,122,.04);
-  border-left: 2px solid var(--accent);
-  border-radius: 0 var(--radius) var(--radius) 0;
-  margin-bottom: 4px;
+  display:none; padding:14px 16px;
+  background:rgba(200,240,122,.04);
+  border-left:2px solid var(--accent);
+  border-radius:0 var(--radius) var(--radius) 0;
+  margin-bottom:4px;
 }
-.conditional-field.visible { display: block; }
+.conditional-field.visible{ display:block; }
+.section-divider{ border:none; border-top:1px solid var(--border); margin:20px 0; }
 
-.section-divider {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 20px 0;
+/* Class panel */
+.class-panel {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); padding:16px; position:sticky; top:76px;
 }
+.class-panel-title {
+  font-size:11px; text-transform:uppercase; letter-spacing:.08em;
+  color:var(--muted); margin-bottom:12px;
+}
+.class-toggle {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:6px 0; border-bottom:1px solid var(--border); cursor:pointer;
+  user-select:none;
+}
+.class-toggle:last-child{ border-bottom:none; }
+.class-toggle-name{ font-size:12px; color:var(--text); }
+.toggle-switch {
+  width:32px; height:18px; border-radius:99px; background:var(--border);
+  position:relative; transition:background .15s; flex-shrink:0;
+}
+.toggle-switch::after {
+  content:''; position:absolute; top:2px; left:2px;
+  width:14px; height:14px; border-radius:50%;
+  background:var(--muted); transition:all .15s;
+}
+.class-toggle.on .toggle-switch{ background:var(--accent); }
+.class-toggle.on .toggle-switch::after{ left:16px; background:#0f0f0f; }
+.class-toggle input[type=checkbox]{ display:none; }
+.panel-actions{ display:flex; gap:8px; margin-top:12px; }
+.panel-btn {
+  flex:1; padding:5px; border:1px solid var(--border); background:transparent;
+  color:var(--muted); font-family:var(--mono); font-size:11px; border-radius:var(--radius);
+  cursor:pointer; transition:all .15s;
+}
+.panel-btn:hover{ border-color:var(--text); color:var(--text); }
 </style>
 {% endblock %}
 
@@ -55,122 +70,175 @@
 <div class="page-title">{{ t.roster_config_title }}</div>
 <div class="page-subtitle">{{ t.roster_config_subtitle }}</div>
 
-<div class="card" style="max-width:600px;">
-  <form method="POST" id="config-form">
-    <input type="hidden" name="ids" value="{{ ids_str }}"/>
+<form method="POST" id="config-form">
+  <input type="hidden" name="ids" value="{{ ids_str }}"/>
+  <div class="config-layout">
 
-    <!-- Selected files -->
-    <div class="form-group">
-      <label>{{ t.roster_config_files_label }}</label>
-      <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
-        {% for u in uploads %}
-        <div style="display:flex; align-items:center; gap:10px; padding:9px 14px;
-                    background:var(--bg); border:1px solid var(--border);
-                    border-radius:var(--radius); font-size:13px;">
-          <span style="color:var(--accent);">▪</span>
-          <span style="flex:1;">{{ u.original_filename }}</span>
-          <span style="color:var(--muted); font-size:11px;">{{ u.row_count }} {{ t.preview_subtitle_rows }}</span>
+    <!-- LEFT: main config -->
+    <div>
+      <div class="card">
+
+        <!-- Selected files -->
+        <div class="form-group">
+          <label>{{ t.roster_config_files_label }}</label>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
+            {% for u in uploads %}
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;
+                        background:var(--bg);border:1px solid var(--border);
+                        border-radius:var(--radius);font-size:13px;">
+              <span style="color:var(--accent);">▪</span>
+              <span style="flex:1;">{{ u.original_filename }}</span>
+              <span style="color:var(--muted);font-size:11px;">{{ u.row_count }} {{ t.preview_subtitle_rows }}</span>
+            </div>
+            {% endfor %}
+          </div>
         </div>
-        {% endfor %}
-      </div>
-    </div>
 
-    <hr class="section-divider"/>
+        <hr class="section-divider"/>
 
-    <!-- 1. Battle type -->
-    <div class="form-group">
-      <label>{{ t.roster_battle_type_label }}</label>
-      <div class="option-group">
-        {% for bt in battle_types %}
-        <label class="option-pill">
-          <input type="radio" name="battle_type" value="{{ bt }}"
-                 onchange="onBattleTypeChange(this.value)" required/>
-          <span class="option-pill-label">{{ bt }}</span>
-        </label>
-        {% endfor %}
-      </div>
-    </div>
-
-    <!-- RoE: number of battles -->
-    <div class="conditional-field" id="field-roe-battles">
-      <div class="form-group" style="margin-bottom:0;">
-        <label>{{ t.roster_roe_battles_label }}</label>
-        <div class="option-group">
-          {% for n in roe_battles_options %}
-          <label class="option-pill">
-            <input type="radio" name="roe_battles" value="{{ n }}" {% if n == '10' %}checked{% endif %}/>
-            <span class="option-pill-label">{{ n }}</span>
-          </label>
-          {% endfor %}
+        <!-- 1. Battle type -->
+        <div class="form-group">
+          <label>{{ t.roster_battle_type_label }}</label>
+          <div class="option-group">
+            {% for bt in battle_types %}
+            <label class="option-pill">
+              <input type="radio" name="battle_type" value="{{ bt }}"
+                     onchange="onBattleType(this.value)" required/>
+              <span class="option-pill-label">{{ bt }}</span>
+            </label>
+            {% endfor %}
+          </div>
         </div>
+
+        <!-- RoE: number of battles -->
+        <div class="conditional-field" id="field-roe">
+          <div class="form-group" style="margin-bottom:0;">
+            <label>{{ t.roster_roe_battles_label }}</label>
+            <div class="option-group">
+              {% for n in roe_battles_options %}
+              <label class="option-pill">
+                <input type="radio" name="roe_battles" value="{{ n }}" {% if n=='10' %}checked{% endif %}/>
+                <span class="option-pill-label">{{ n }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Clan Battle: mode -->
+        <div class="conditional-field" id="field-clan-mode">
+          <div class="form-group" style="margin-bottom:0;">
+            <label>{{ t.roster_clan_mode_label }}</label>
+            <div class="option-group">
+              {% for m in clan_battle_modes %}
+              <label class="option-pill">
+                <input type="radio" name="clan_mode" value="{{ m }}" {% if m=='Standard' %}checked{% endif %}/>
+                <span class="option-pill-label">{{ m }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <hr class="section-divider"/>
+
+        <!-- 2. Priority -->
+        <div class="form-group">
+          <label>{{ t.roster_priority_label }}</label>
+          <div class="option-group">
+            {% for opt in priority_options %}
+            <label class="option-pill">
+              <input type="radio" name="priority" value="{{ opt }}" required/>
+              <span class="option-pill-label">{{ opt }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <hr class="section-divider"/>
+
+        <!-- 3. Online -->
+        <div class="form-group">
+          <label>{{ t.roster_online_label }}</label>
+          <div class="option-group">
+            {% for opt in online_options %}
+            <label class="option-pill">
+              <input type="radio" name="online_only" value="{{ opt }}" required/>
+              <span class="option-pill-label">{{ opt }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <hr class="section-divider"/>
+
+        <!-- 4. Distribution -->
+        <div class="form-group">
+          <label>{{ t.roster_dist_label }}</label>
+          <div class="option-group">
+            {% for opt in dist_options %}
+            <label class="option-pill">
+              <input type="radio" name="distribution" value="{{ opt }}" required/>
+              <span class="option-pill-label">{{ opt }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <hr class="section-divider"/>
+
+        <div style="display:flex;gap:12px;margin-top:8px;">
+          <button type="submit" class="btn btn-primary">{{ t.roster_config_submit }}</button>
+          <a href="{{ url_for('main.roster_select') }}" class="btn btn-ghost">← {{ t.upload_cancel }}</a>
+        </div>
+
       </div>
     </div>
 
-    <hr class="section-divider"/>
-
-    <!-- 2. Priority -->
-    <div class="form-group">
-      <label>{{ t.roster_priority_label }}</label>
-      <div class="option-group">
-        {% for opt in priority_options %}
-        <label class="option-pill">
-          <input type="radio" name="priority" value="{{ opt }}" required/>
-          <span class="option-pill-label">{{ opt }}</span>
-        </label>
-        {% endfor %}
+    <!-- RIGHT: class toggles -->
+    <div class="class-panel">
+      <div class="class-panel-title">{{ t.roster_classes_label }}</div>
+      {% for cls in all_classes %}
+      <label class="class-toggle on" id="toggle-{{ loop.index }}"
+             onclick="toggleClass(this, '{{ cls }}')">
+        <input type="checkbox" name="active_classes" value="{{ cls }}" checked
+               id="cls-{{ loop.index }}"/>
+        <span class="class-toggle-name">{{ cls }}</span>
+        <span class="toggle-switch"></span>
+      </label>
+      {% endfor %}
+      <div class="panel-actions">
+        <button type="button" class="panel-btn" onclick="setAllClasses(true)">{{ t.roster_all_on }}</button>
+        <button type="button" class="panel-btn" onclick="setAllClasses(false)">{{ t.roster_all_off }}</button>
       </div>
     </div>
 
-    <hr class="section-divider"/>
-
-    <!-- 3. Online only -->
-    <div class="form-group">
-      <label>{{ t.roster_online_label }}</label>
-      <div class="option-group">
-        {% for opt in online_options %}
-        <label class="option-pill">
-          <input type="radio" name="online_only" value="{{ opt }}" required/>
-          <span class="option-pill-label">{{ opt }}</span>
-        </label>
-        {% endfor %}
-      </div>
-    </div>
-
-    <hr class="section-divider"/>
-
-    <!-- 4. Distribution -->
-    <div class="form-group">
-      <label>{{ t.roster_dist_label }}</label>
-      <div class="option-group">
-        {% for opt in dist_options %}
-        <label class="option-pill">
-          <input type="radio" name="distribution" value="{{ opt }}" required/>
-          <span class="option-pill-label">{{ opt }}</span>
-        </label>
-        {% endfor %}
-      </div>
-    </div>
-
-    <hr class="section-divider"/>
-
-    <div style="display:flex; gap:12px; margin-top:8px;">
-      <button type="submit" class="btn btn-primary">{{ t.roster_config_submit }}</button>
-      <a href="{{ url_for('main.roster_select') }}" class="btn btn-ghost">← {{ t.upload_cancel }}</a>
-    </div>
-  </form>
-</div>
+  </div>
+</form>
 
 <script>
-function onBattleTypeChange(val) {
-  var el = document.getElementById('field-roe-battles');
-  if (val === 'RoE') {
-    el.classList.add('visible');
-    // make roe_battles required
-    el.querySelectorAll('input').forEach(function(i){ i.required = true; });
-  } else {
-    el.classList.remove('visible');
-    el.querySelectorAll('input').forEach(function(i){ i.required = false; });
-  }
+function onBattleType(val) {
+  document.getElementById('field-roe').classList.toggle('visible', val === 'RoE');
+  document.getElementById('field-clan-mode').classList.toggle('visible', val === 'Clan Battle');
+  // make roe_battles required only for RoE
+  document.querySelectorAll('#field-roe input').forEach(i => i.required = val === 'RoE');
+}
+
+function toggleClass(label, cls) {
+  var cb = label.querySelector('input[type=checkbox]');
+  // click fires before state changes, so invert
+  var willBeOn = !cb.checked;
+  cb.checked = willBeOn;
+  label.classList.toggle('on', willBeOn);
+  return false; // prevent double-fire
+}
+
+function setAllClasses(on) {
+  document.querySelectorAll('.class-toggle').forEach(function(label) {
+    var cb = label.querySelector('input[type=checkbox]');
+    cb.checked = on;
+    label.classList.toggle('on', on);
+  });
 }
 </script>
 {% endblock %}

@@ -74,3 +74,26 @@ class Attendance(db.Model):
 
     def __repr__(self):
         return f'<Attendance upload={self.upload_id}>'
+
+
+class SavedRoster(db.Model):
+    __tablename__ = 'saved_rosters'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(256), nullable=False)        # username + date
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    battle_type = db.Column(db.String(64), default='')
+    config = db.Column(db.Text, default='{}')               # JSON config snapshot
+    # JSON: list of groups, each group = list of player dicts
+    groups_data = db.Column(db.Text, default='[]')
+    # JSON: list of column names used
+    columns_data = db.Column(db.Text, default='[]')
+    # JSON: manual overrides { "group_idx:slot_idx": player_dict }
+    overrides = db.Column(db.Text, default='{}')
+    # JSON: full combined player pool (for override dropdowns)
+    player_pool = db.Column(db.Text, default='[]')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    creator = db.relationship('User', foreign_keys=[created_by])
+
+    def __repr__(self):
+        return f'<SavedRoster {self.name}>'

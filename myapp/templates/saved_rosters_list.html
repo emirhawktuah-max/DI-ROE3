@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ t.saved_rosters_title }} — DataFlow{% endblock %}
+{% block content %}
+<div class="page-title">{{ t.saved_rosters_title }}</div>
+<div class="page-subtitle">{{ t.saved_rosters_subtitle }}</div>
+
+{% if rosters %}
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>{{ t.saved_rosters_col_name }}</th>
+        <th>{{ t.saved_rosters_col_type }}</th>
+        <th>{{ t.saved_rosters_col_by }}</th>
+        <th>{{ t.saved_rosters_col_date }}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for sr in rosters %}
+    <tr>
+      <td><a href="{{ url_for('main.saved_roster_view', roster_id=sr.id) }}" style="color:var(--accent);text-decoration:none;">{{ sr.name }}</a></td>
+      <td><span style="font-size:12px;">{{ sr.battle_type }}</span></td>
+      <td style="color:var(--muted);font-size:12px;">{{ sr.creator.username }}</td>
+      <td style="color:var(--muted);font-size:12px;">{{ sr.created_at.strftime('%d %b %Y %H:%M') }}</td>
+      <td style="display:flex;gap:8px;">
+        <a href="{{ url_for('main.saved_roster_view', roster_id=sr.id) }}" class="btn btn-ghost btn-sm">{{ t.manage_btn_view }}</a>
+        <form method="POST" action="{{ url_for('main.saved_roster_delete', roster_id=sr.id) }}"
+              onsubmit="return confirm('{{ t.manage_btn_delete }} {{ sr.name }}?')">
+          <button type="submit" class="btn btn-danger btn-sm">{{ t.manage_btn_delete }}</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card"><div class="empty">{{ t.saved_rosters_empty }} <a href="{{ url_for('main.roster_select') }}" style="color:var(--accent)">{{ t.nav_roster }} →</a></div></div>
+{% endif %}
+
+<div style="margin-top:16px;">
+  <a href="{{ url_for('main.roster_select') }}" class="btn btn-primary">+ {{ t.nav_roster }}</a>
+</div>
+{% endblock %}

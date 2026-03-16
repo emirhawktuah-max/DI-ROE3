@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ t.roster_view_title }} — DataFlow{% endblock %}
+{% block title %}{{ sr.name }} — DataFlow{% endblock %}
 {% block head %}
 <style>
 .battle-badge{display:inline-block;padding:4px 14px;border-radius:99px;font-size:12px;font-weight:500;background:rgba(200,240,122,.15);border:1px solid var(--accent);color:var(--accent);margin-left:12px;vertical-align:middle;}
@@ -20,7 +20,7 @@
 .battle-stats strong{color:var(--text);}
 .battle-table{width:100%;border-collapse:collapse;font-size:12px;}
 .battle-table th{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);padding:6px 10px;text-align:left;background:#1a1a1a;}
-.battle-table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.battle-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
 .battle-table tr:last-child td{border-bottom:none;}
 .battle-table tr:hover td{background:rgba(255,255,255,.02);}
 .class-badge{display:inline-block;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:500;white-space:nowrap;}
@@ -35,27 +35,42 @@
 .cls-Druid{background:#1a2e20;color:#60d090;border:1px solid #2a4e38;}
 .cls-default{background:#1a1a1a;color:var(--muted);border:1px solid var(--border);}
 .rank-outside{color:var(--muted);font-size:10px;font-style:italic;}
-.online-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:4px;vertical-align:middle;}
+
+/* Override dropdown */
+.override-select {
+  background:var(--bg); border:1px solid var(--border); color:var(--text);
+  font-family:var(--mono); font-size:11px; padding:3px 6px;
+  border-radius:var(--radius); outline:none; width:100%;
+  transition:border-color .15s;
+}
+.override-select:focus{border-color:var(--accent);}
+.override-select.changed{border-color:var(--accent2);}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="page-title">{{ t.roster_view_title }}<span class="battle-badge">{{ battle_type }}{% if clan_mode != 'Standard' %} · {{ clan_mode }}{% endif %}</span></div>
+<div class="page-title">{{ sr.name }}<span class="battle-badge">{{ sr.battle_type }}</span></div>
+<div class="page-subtitle">{{ t.saved_rosters_col_by }}: {{ sr.creator.username }} · {{ sr.created_at.strftime('%d %b %Y %H:%M') }}</div>
 
 <div class="config-pills">
-  <span class="config-pill">{{ t.roster_priority_label }}: <strong>{{ priority }}</strong></span>
-  <span class="config-pill">{{ t.roster_online_label }}: <strong>{{ online_only }}</strong></span>
-  <span class="config-pill">{{ t.roster_dist_label }}: <strong>{{ distribution }}</strong></span>
-  <span class="config-pill">{{ t.roster_num_battles_label }}: <strong>{{ num_battles }}</strong></span>
-  <span class="config-pill">{{ t.roster_total_players }}: <strong>{{ total_players }}</strong></span>
-  {% for f in source_files %}<span class="config-pill">{{ f }}</span>{% endfor %}
+  {% if config.priority %}<span class="config-pill">{{ t.roster_priority_label }}: <strong>{{ config.priority }}</strong></span>{% endif %}
+  {% if config.online_only %}<span class="config-pill">{{ t.roster_online_label }}: <strong>{{ config.online_only }}</strong></span>{% endif %}
+  {% if config.distribution %}<span class="config-pill">{{ t.roster_dist_label }}: <strong>{{ config.distribution }}</strong></span>{% endif %}
+  {% if config.num_battles %}<span class="config-pill">{{ t.roster_num_battles_label }}: <strong>{{ config.num_battles }}</strong></span>{% endif %}
+  {% if config.source_files %}
+    {% set sf = config.source_files %}
+    {% if sf is string %}{% set sf = sf | from_json %}{% endif %}
+    {% for f in sf %}<span class="config-pill">{{ f }}</span>{% endfor %}
+  {% endif %}
 </div>
 
+<form method="POST" action="{{ url_for('main.saved_roster_override', roster_id=sr.id) }}" id="override-form">
 {% if groups %}
 <div class="battles-grid">
   {% for group in groups %}
   {% set stat = group_stats[loop.index0] %}
-  {% set tier = tier_labels[loop.index0] if tier_labels else None %}
+  {% set gi = loop.index0 %}
+  {% set tier = tier_labels[gi] if tier_labels else None %}
   <div class="battle-card">
     <div class="battle-card-header">
       <span class="battle-num">
@@ -67,53 +82,52 @@
         ø reso <strong>{{ stat.avg_reso }}</strong>
       </div>
     </div>
-    {% if group %}
     <table class="battle-table">
-      <thead><tr><th>#</th>{% for col in columns %}<th>{{ col }}</th>{% endfor %}</tr></thead>
+      <thead><tr><th>#</th>{% for col in columns %}<th>{{ col }}</th>{% endfor %}<th style="color:var(--accent);font-size:10px;">{{ t.roster_override_col }}</th></tr></thead>
       <tbody>
       {% for player in group %}
+      {% set si = loop.index0 %}
       <tr>
         <td style="color:var(--muted);font-size:10px;">{{ loop.index }}</td>
         {% for col in columns %}
-          {% set val = player[col] %}
+          {% set val = player.get(col, '') %}
           {% if col == 'Nazwa' %}
-            <td style="font-weight:500;font-size:12px;">
-              {% if player.get('_confirmed') %}<span class="online-dot"></span>{% endif %}{{ val }}
-            </td>
+            <td style="font-weight:500;font-size:12px;">{{ val }}</td>
           {% elif col == 'Klasa' %}
             <td><span class="class-badge cls-{{ val|replace(' ','_') if val else 'default' }}">{{ val }}</span></td>
           {% elif col == 'Ranking udziału' %}
             <td>{% if val=='Poza rankingiem' or val=='' %}<span class="rank-outside">{{ val if val else '—' }}</span>{% else %}{{ val }}{% endif %}</td>
           {% else %}<td>{{ val }}</td>{% endif %}
         {% endfor %}
+        <td>
+          <select class="override-select" name="override_{{ gi }}_{{ si }}"
+                  onchange="this.classList.add('changed')">
+            <option value="{{ player.get('Nazwa','') }}">— {{ player.get('Nazwa','') }}</option>
+            {% for p in player_pool %}
+            {% if p.get('Nazwa','') != player.get('Nazwa','') %}
+            <option value="{{ p.get('Nazwa','') }}">{{ p.get('Nazwa','') }} ({{ p.get('Rezonowanie','') }})</option>
+            {% endif %}
+            {% endfor %}
+          </select>
+        </td>
       </tr>
       {% endfor %}
       </tbody>
     </table>
-    {% else %}
-    <div style="padding:16px;color:var(--muted);font-size:12px;text-align:center;">—</div>
-    {% endif %}
   </div>
   {% endfor %}
 </div>
 
-<!-- Save form -->
-<form method="POST" action="{{ url_for('main.roster_save') }}" style="margin-top:28px;">
-  <input type="hidden" name="groups_data"  value="{{ groups | tojson | e }}"/>
-  <input type="hidden" name="columns_data" value="{{ columns | tojson | e }}"/>
-  <input type="hidden" name="player_pool"  value="{{ full_pool | tojson | e }}"/>
-  <input type="hidden" name="battle_type"  value="{{ battle_type }}"/>
-  <input type="hidden" name="clan_mode"    value="{{ clan_mode }}"/>
-  <input type="hidden" name="tier_labels"  value="{{ tier_labels | tojson if tier_labels else 'null' }}"/>
-  <input type="hidden" name="source_files" value="{{ source_files | tojson | e }}"/>
-  <div style="display:flex;gap:12px;">
-    <button type="submit" class="btn btn-primary">{{ t.roster_save_btn }} ↓</button>
-    <a href="{{ url_for('main.roster_config') }}?ids={{ session.get('roster_ids',[])|join(',') }}" class="btn btn-ghost">{{ t.roster_reconfigure }}</a>
-    <a href="{{ url_for('main.roster_select') }}" class="btn btn-ghost">{{ t.roster_back }}</a>
-  </div>
+<div style="margin-top:28px;display:flex;gap:12px;">
+  <button type="submit" class="btn btn-primary">{{ t.roster_save_overrides }} ✓</button>
+  <a href="{{ url_for('main.saved_rosters_list') }}" class="btn btn-ghost">← {{ t.saved_rosters_title }}</a>
+  <form method="POST" action="{{ url_for('main.saved_roster_delete', roster_id=sr.id) }}"
+        onsubmit="return confirm('{{ t.manage_btn_delete }} {{ sr.name }}?')" style="margin:0;">
+    <button type="submit" class="btn btn-danger">{{ t.manage_btn_delete }}</button>
+  </form>
+</div>
 </form>
 {% else %}
 <div class="card"><div class="empty">{{ t.roster_no_players }}</div></div>
-<a href="{{ url_for('main.roster_select') }}" class="btn btn-ghost" style="margin-top:16px;">{{ t.roster_back }}</a>
 {% endif %}
 {% endblock %}

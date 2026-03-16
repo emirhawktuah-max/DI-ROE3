@@ -286,17 +286,140 @@ def save_attendance(upload_id):
 # ROSTER GENERATOR
 # ---------------------------------------------------------------------------
 
-BATTLE_TYPES = ['RoE', 'Clan Battle']
-PRIORITY_OPTIONS = ['Rezonowanie', 'Class']
-ONLINE_OPTIONS   = ['Only confirmed online', 'All players']
-DIST_OPTIONS     = ['Max power', 'Even distribution']
+BATTLE_TYPES        = ['RoE', 'Clan Battle']
+CLAN_BATTLE_MODES   = ['Standard', '8 4 2 1']
+PRIORITY_OPTIONS    = ['Rezonowanie', 'Class']
+ONLINE_OPTIONS      = ['Only confirmed online', 'Prioritize Online', 'All players']
+DIST_OPTIONS        = ['Max power', 'Even distribution']
 ROE_BATTLES_OPTIONS = ['7', '10']
 
+ALL_CLASSES = [
+    'Nekromanta', 'Barbarzyńca', 'Łowca demonów', 'Rycerz krwi',
+    'Czarownik', 'Mnich', 'Krzyżowiec', 'Sztormiciel', 'Druid'
+]
+
+
+# ---------------------------------------------------------------------------
+# Grouping helpers
+# ---------------------------------------------------------------------------
+
+def _reso(p):
+    try:
+        return int(p.get('Rezonowanie', 0) or 0)
+    except Exception:
+        return 0
+
+
+def _sort_by_priority(players, priority):
+    """Return players sorted according to priority setting."""
+    if priority == 'Rezonowanie':
+        return sorted(players, key=_reso, reverse=True)
+    else:
+        # Class round-robin (sorted by reso within class)
+        from collections import defaultdict
+        by_class = defaultdict(list)
+        for p in sorted(players, key=_reso, reverse=True):
+            by_class[p.get('Klasa', '')].append(p)
+        result = []
+        classes = sorted(by_class.keys(), key=lambda c: -len(by_class[c]))
+        while any(by_class[c] for c in classes):
+            for c in classes:
+                if by_class[c]:
+                    result.append(by_class[c].pop(0))
+        return result
+
+
+def _distribute(pool, num_groups, group_size, distribution):
+    """Split pool into num_groups of group_size using chosen distribution."""
+    if distribution == 'Max power':
+        groups = []
+        for i in range(num_groups):
+            groups.append(pool[i*group_size:(i+1)*group_size])
+        return groups
+    else:
+        # Snake draft for even reso averages
+        by_reso = sorted(pool, key=_reso, reverse=True)
+        groups = [[] for _ in range(num_groups)]
+        for i, player in enumerate(by_reso):
+            rnd = i // num_groups
+            pos = i % num_groups
+            idx = pos if rnd % 2 == 0 else num_groups - 1 - pos
+            groups[idx].append(player)
+        return groups
+
+
+def _build_groups(players, num_battles, priority, distribution,
+                  clan_mode='Standard'):
+    """
+    Main grouping entry point.
+    clan_mode: 'Standard' | '8 4 2 1'
+    """
+    group_size = 8
+
+    # Enrich with numeric reso
+    for p in players:
+        p['_reso'] = _reso(p)
+
+    sorted_pool = _sort_by_priority(players, priority)
+
+    if clan_mode == '8 4 2 1':
+        # Tier sizes: 3 groups of 8 = 24 players per tier label
+        # Label tiers: first 3 groups → "8", next 3 → "4", next 3 → "2", last 3 → "1"
+        # Total: 12 groups of 8 = 96 slots
+        tier_labels = ['8']*3 + ['4']*3 + ['2']*3 + ['1']*3
+        total_slots = 12 * group_size
+        pool = sorted_pool[:total_slots]
+
+        tier_groups = []
+        for tier_start in range(0, 12, 3):
+            tier_pool = pool[tier_start*group_size:(tier_start+3)*group_size]
+            tier_g = _distribute(tier_pool, 3, group_size, distribution)
+            for g in tier_g:
+                tier_groups.append(g)
+
+        for p in players:
+            p.pop('_reso', None)
+        return tier_groups, tier_labels
+
+    else:
+        total_slots = num_battles * group_size
+        pool = sorted_pool[:total_slots]
+        groups = _distribute(pool, num_battles, group_size, distribution)
+        for p in players:
+            p.pop('_reso', None)
+        return groups, None
+
+
+def _apply_online_filter(all_players, online_mode, num_slots):
+    """
+    Returns a pool respecting the online mode.
+    'Only confirmed online'  → confirmed players only
+    'All players'            → everyone
+    'Prioritize Online'      → confirmed first, then fill with non-confirmed
+    """
+    if online_mode == 'Only confirmed online':
+        return [p for p in all_players if p.get('_confirmed')]
+    elif online_mode == 'Prioritize Online':
+        confirmed  = [p for p in all_players if p.get('_confirmed')]
+        remaining  = [p for p in all_players if not p.get('_confirmed')]
+        # Fill up to num_slots
+        return (confirmed + remaining)[:num_slots]
+    else:
+        return all_players
+
+
+def _avg_reso(group):
+    vals = [_reso(p) for p in group]
+    return round(sum(vals)/len(vals)) if vals else 0
+
+
+# ---------------------------------------------------------------------------
+# Roster routes
+# ---------------------------------------------------------------------------
 
 @main_bp.route('/roster', methods=['GET', 'POST'])
 @login_required
 def roster_select():
-    """Step 1 — pick up to 3 files."""
     tr = t()
     if current_user.is_admin():
         all_uploads = Upload.query.order_by(Upload.uploaded_at.desc()).all()
@@ -313,15 +436,10 @@ def roster_select():
         if len(selected) > 3:
             flash(tr['roster_error_too_many'], 'error')
             return redirect(request.url)
-
-        # Pass selected IDs to config step via query string
         ids_str = ','.join(selected[:3])
         return redirect(url_for('main.roster_config', ids=ids_str))
 
-    return render_template('roster_select.html',
-                           uploads=all_uploads,
-                           battle_types=BATTLE_TYPES)
-
+    return render_template('roster_select.html', uploads=all_uploads)
 
 
 @main_bp.route('/roster/config', methods=['GET', 'POST'])
@@ -341,12 +459,26 @@ def roster_config():
         flash(tr['roster_error_no_files'], 'error')
         return redirect(url_for('main.roster_select'))
 
+    def _render_config(**kw):
+        return render_template('roster_config.html',
+                               uploads=uploads, ids_str=ids_str,
+                               battle_types=BATTLE_TYPES,
+                               clan_battle_modes=CLAN_BATTLE_MODES,
+                               priority_options=PRIORITY_OPTIONS,
+                               online_options=ONLINE_OPTIONS,
+                               dist_options=DIST_OPTIONS,
+                               roe_battles_options=ROE_BATTLES_OPTIONS,
+                               all_classes=ALL_CLASSES,
+                               **kw)
+
     if request.method == 'POST':
-        battle_type = request.form.get('battle_type', '').strip()
-        priority    = request.form.get('priority', '').strip()
-        online_only = request.form.get('online_only', '').strip()
-        distribution= request.form.get('distribution', '').strip()
-        roe_battles = request.form.get('roe_battles', '10').strip()
+        battle_type   = request.form.get('battle_type', '').strip()
+        clan_mode     = request.form.get('clan_mode', 'Standard').strip()
+        priority      = request.form.get('priority', '').strip()
+        online_only   = request.form.get('online_only', '').strip()
+        distribution  = request.form.get('distribution', '').strip()
+        roe_battles   = request.form.get('roe_battles', '10').strip()
+        active_classes= request.form.getlist('active_classes')
 
         errors = []
         if battle_type not in BATTLE_TYPES:
@@ -357,124 +489,51 @@ def roster_config():
             errors.append(tr['roster_error_no_online'])
         if distribution not in DIST_OPTIONS:
             errors.append(tr['roster_error_no_dist'])
+        if not active_classes:
+            errors.append(tr['roster_error_no_classes'])
 
         if errors:
             for e in errors:
                 flash(e, 'error')
-            return render_template('roster_config.html',
-                                   uploads=uploads, ids_str=ids_str,
-                                   battle_types=BATTLE_TYPES,
-                                   priority_options=PRIORITY_OPTIONS,
-                                   online_options=ONLINE_OPTIONS,
-                                   dist_options=DIST_OPTIONS,
-                                   roe_battles_options=ROE_BATTLES_OPTIONS)
+            return _render_config()
 
-        num_battles = int(roe_battles) if battle_type == 'RoE' else 12
+        if battle_type == 'RoE':
+            num_battles = int(roe_battles) if roe_battles in ROE_BATTLES_OPTIONS else 10
+        elif clan_mode == '8 4 2 1':
+            num_battles = 12
+        else:
+            num_battles = 12
 
-        session['roster_ids']        = upload_ids
-        session['roster_battle_type']= battle_type
-        session['roster_priority']   = priority
-        session['roster_online_only']= online_only
+        session['roster_ids']         = upload_ids
+        session['roster_battle_type'] = battle_type
+        session['roster_clan_mode']   = clan_mode
+        session['roster_priority']    = priority
+        session['roster_online_only'] = online_only
         session['roster_distribution']= distribution
-        session['roster_num_battles']= num_battles
+        session['roster_num_battles'] = num_battles
+        session['roster_active_classes'] = active_classes
         return redirect(url_for('main.roster_view'))
 
-    return render_template('roster_config.html',
-                           uploads=uploads, ids_str=ids_str,
-                           battle_types=BATTLE_TYPES,
-                           priority_options=PRIORITY_OPTIONS,
-                           online_options=ONLINE_OPTIONS,
-                           dist_options=DIST_OPTIONS,
-                           roe_battles_options=ROE_BATTLES_OPTIONS)
-
-
-# ---------------------------------------------------------------------------
-# Grouping algorithm
-# ---------------------------------------------------------------------------
-
-def _build_groups(players, num_battles, priority, distribution):
-    """
-    players   : list of dicts, each has 'Rezonowanie' (numeric), 'Klasa'
-    num_battles: int — number of groups of 8
-    priority  : 'Rezonowanie' | 'Class'
-    distribution: 'Max power' | 'Even distribution'
-    Returns list of groups (each group = list of player dicts).
-    """
-    import math
-
-    # Convert Rezonowanie to numeric, default 0
-    for p in players:
-        try:
-            p['_reso'] = int(p.get('Rezonowanie', 0))
-        except (ValueError, TypeError):
-            p['_reso'] = 0
-
-    group_size = 8
-    total_slots = num_battles * group_size
-
-    # Trim or pad to total_slots
-    if priority == 'Rezonowanie':
-        sorted_players = sorted(players, key=lambda x: x['_reso'], reverse=True)
-    else:
-        # Class priority: interleave classes so each group gets variety
-        from collections import defaultdict
-        by_class = defaultdict(list)
-        for p in sorted(players, key=lambda x: x['_reso'], reverse=True):
-            by_class[p.get('Klasa', '')].append(p)
-        # Round-robin across classes
-        sorted_players = []
-        classes = sorted(by_class.keys(), key=lambda c: -len(by_class[c]))
-        while any(by_class[c] for c in classes):
-            for c in classes:
-                if by_class[c]:
-                    sorted_players.append(by_class[c].pop(0))
-
-    pool = sorted_players[:total_slots]
-
-    if distribution == 'Max power':
-        # Simple: fill groups top to bottom
-        groups = []
-        for i in range(num_battles):
-            groups.append(pool[i*group_size:(i+1)*group_size])
-    else:
-        # Even distribution: snake draft
-        # Sort by reso desc, then snake across groups
-        pool_sorted = sorted(pool, key=lambda x: x['_reso'], reverse=True)
-        groups = [[] for _ in range(num_battles)]
-        for i, player in enumerate(pool_sorted):
-            round_num = i // num_battles
-            pos_in_round = i % num_battles
-            # Snake: even rounds left-to-right, odd rounds right-to-left
-            if round_num % 2 == 0:
-                group_idx = pos_in_round
-            else:
-                group_idx = num_battles - 1 - pos_in_round
-            groups[group_idx].append(player)
-
-    # Clean up helper key
-    for g in groups:
-        for p in g:
-            p.pop('_reso', None)
-
-    return groups
+    return _render_config()
 
 
 @main_bp.route('/roster/view')
 @login_required
 def roster_view():
     tr = t()
-    upload_ids   = session.get('roster_ids', [])
-    battle_type  = session.get('roster_battle_type', '')
-    priority     = session.get('roster_priority', 'Rezonowanie')
-    online_only  = session.get('roster_online_only', 'All players')
-    distribution = session.get('roster_distribution', 'Max power')
-    num_battles  = session.get('roster_num_battles', 10)
+    upload_ids     = session.get('roster_ids', [])
+    battle_type    = session.get('roster_battle_type', '')
+    clan_mode      = session.get('roster_clan_mode', 'Standard')
+    priority       = session.get('roster_priority', 'Rezonowanie')
+    online_only    = session.get('roster_online_only', 'All players')
+    distribution   = session.get('roster_distribution', 'Max power')
+    num_battles    = session.get('roster_num_battles', 12)
+    active_classes = session.get('roster_active_classes', ALL_CLASSES)
 
     if not upload_ids or not battle_type:
         flash(tr['roster_error_no_files'], 'error')
         return redirect(url_for('main.roster_select'))
 
-    # Combine all files into one player list
     all_players = []
     source_files = []
     columns_used = None
@@ -494,7 +553,6 @@ def roster_view():
 
         cols = list(df.columns)
         if columns_used is None:
-            # Remove first and last column
             columns_used = cols[1:-1]
 
         rows = df.fillna('').to_dict(orient='records')
@@ -502,44 +560,195 @@ def roster_view():
             row['_confirmed'] = confirmed_map.get(str(i), False)
             row['_source']    = upload_rec.original_filename
             all_players.append(row)
-
         source_files.append(upload_rec.original_filename)
 
-    if online_only == 'Only confirmed online':
-        pool = [p for p in all_players if p.get('_confirmed')]
-    else:
-        pool = all_players
-
-    # Remove duplicates by name (keep highest reso)
+    # Deduplicate by name
     seen = {}
-    for p in sorted(pool, key=lambda x: int(x.get('Rezonowanie', 0) or 0), reverse=True):
+    for p in sorted(all_players, key=_reso, reverse=True):
         name = p.get('Nazwa', '')
         if name and name not in seen:
             seen[name] = p
-    pool = list(seen.values())
+    all_players = list(seen.values())
 
-    groups = _build_groups(pool, num_battles, priority, distribution)
+    # Class filter
+    all_players = [p for p in all_players
+                   if p.get('Klasa', '') in active_classes]
 
-    # Compute avg reso per group for display
-    def avg_reso(group):
-        vals = []
-        for p in group:
-            try:
-                vals.append(int(p.get('Rezonowanie', 0) or 0))
-            except Exception:
-                pass
-        return round(sum(vals)/len(vals)) if vals else 0
+    # Online filter
+    total_slots = num_battles * 8
+    pool = _apply_online_filter(all_players, online_only, total_slots)
 
-    group_stats = [{'avg_reso': avg_reso(g), 'count': len(g)} for g in groups]
+    # Build groups
+    groups, tier_labels = _build_groups(
+        pool, num_battles, priority, distribution,
+        clan_mode=clan_mode if battle_type == 'Clan Battle' else 'Standard'
+    )
+
+    group_stats = [{'avg_reso': _avg_reso(g), 'count': len(g)} for g in groups]
+
+    # Store full player pool for override dropdowns (clean copy)
+    full_pool_clean = []
+    for p in all_players:
+        pc = {k: v for k, v in p.items() if not k.startswith('_')}
+        full_pool_clean.append(pc)
 
     return render_template('roster_view.html',
                            groups=groups,
                            group_stats=group_stats,
+                           tier_labels=tier_labels,
                            columns=columns_used or [],
                            battle_type=battle_type,
+                           clan_mode=clan_mode,
                            priority=priority,
                            online_only=online_only,
                            distribution=distribution,
                            num_battles=num_battles,
+                           active_classes=active_classes,
                            source_files=source_files,
-                           total_players=len(pool))
+                           total_players=len(pool),
+                           full_pool=full_pool_clean)
+
+
+@main_bp.route('/roster/save', methods=['POST'])
+@login_required
+def roster_save():
+    from models import SavedRoster
+    tr = t()
+
+    groups_json  = request.form.get('groups_data', '[]')
+    columns_json = request.form.get('columns_data', '[]')
+    pool_json    = request.form.get('player_pool', '[]')
+    battle_type  = request.form.get('battle_type', '')
+    clan_mode    = request.form.get('clan_mode', 'Standard')
+    tier_labels_json = request.form.get('tier_labels', 'null')
+
+    config = {
+        'battle_type':   battle_type,
+        'clan_mode':     clan_mode,
+        'priority':      session.get('roster_priority'),
+        'online_only':   session.get('roster_online_only'),
+        'distribution':  session.get('roster_distribution'),
+        'num_battles':   session.get('roster_num_battles'),
+        'active_classes':session.get('roster_active_classes'),
+        'source_files':  request.form.get('source_files', '[]'),
+        'tier_labels':   json.loads(tier_labels_json) if tier_labels_json != 'null' else None,
+    }
+
+    today = date.today().strftime('%Y-%m-%d')
+    name  = f"{current_user.username}_{today}"
+
+    sr = SavedRoster(
+        name=name,
+        created_by=current_user.id,
+        battle_type=battle_type,
+        config=json.dumps(config),
+        groups_data=groups_json,
+        columns_data=columns_json,
+        player_pool=pool_json,
+        overrides='{}',
+    )
+    db.session.add(sr)
+    db.session.commit()
+    flash(f'{tr["roster_saved"]} "{name}"', 'success')
+    return redirect(url_for('main.saved_roster_view', roster_id=sr.id))
+
+
+# ---------------------------------------------------------------------------
+# Saved Rosters module
+# ---------------------------------------------------------------------------
+
+@main_bp.route('/saved-rosters')
+@login_required
+def saved_rosters_list():
+    from models import SavedRoster
+    if current_user.is_admin():
+        rosters = SavedRoster.query.order_by(SavedRoster.created_at.desc()).all()
+    else:
+        rosters = SavedRoster.query.filter_by(created_by=current_user.id)\
+                             .order_by(SavedRoster.created_at.desc()).all()
+    return render_template('saved_rosters_list.html', rosters=rosters)
+
+
+@main_bp.route('/saved-rosters/<int:roster_id>')
+@login_required
+def saved_roster_view(roster_id):
+    from models import SavedRoster
+    sr = SavedRoster.query.get_or_404(roster_id)
+    if sr.created_by != current_user.id and not current_user.is_admin():
+        flash(t()['flash_access_denied'], 'error')
+        return redirect(url_for('main.saved_rosters_list'))
+
+    groups      = json.loads(sr.groups_data)
+    columns     = json.loads(sr.columns_data)
+    overrides   = json.loads(sr.overrides)
+    player_pool = json.loads(sr.player_pool)
+    config      = json.loads(sr.config)
+    tier_labels = config.get('tier_labels')
+
+    # Apply overrides to groups for display
+    display_groups = []
+    for gi, group in enumerate(groups):
+        display_group = []
+        for si, player in enumerate(group):
+            key = f'{gi}:{si}'
+            display_group.append(overrides.get(key, player))
+        display_groups.append(display_group)
+
+    group_stats = [{'avg_reso': _avg_reso(g), 'count': len(g)}
+                   for g in display_groups]
+
+    return render_template('saved_roster_view.html',
+                           sr=sr,
+                           groups=display_groups,
+                           group_stats=group_stats,
+                           tier_labels=tier_labels,
+                           columns=columns,
+                           config=config,
+                           player_pool=player_pool)
+
+
+@main_bp.route('/saved-rosters/<int:roster_id>/override', methods=['POST'])
+@login_required
+def saved_roster_override(roster_id):
+    from models import SavedRoster
+    sr = SavedRoster.query.get_or_404(roster_id)
+    if sr.created_by != current_user.id and not current_user.is_admin():
+        flash(t()['flash_access_denied'], 'error')
+        return redirect(url_for('main.saved_rosters_list'))
+
+    overrides = json.loads(sr.overrides)
+    player_pool = json.loads(sr.player_pool)
+
+    # Each override field: name="override_GI_SI" value=player_name
+    for key, val in request.form.items():
+        if key.startswith('override_'):
+            parts = key.split('_', 2)
+            if len(parts) == 3:
+                gi, si = parts[1], parts[2]
+                slot_key = f'{gi}:{si}'
+                # Find player in pool by name
+                chosen = next((p for p in player_pool
+                               if p.get('Nazwa', '') == val), None)
+                if chosen:
+                    overrides[slot_key] = chosen
+                elif slot_key in overrides:
+                    del overrides[slot_key]
+
+    sr.overrides = json.dumps(overrides)
+    db.session.commit()
+    flash(t()['roster_overrides_saved'], 'success')
+    return redirect(url_for('main.saved_roster_view', roster_id=roster_id))
+
+
+@main_bp.route('/saved-rosters/<int:roster_id>/delete', methods=['POST'])
+@login_required
+def saved_roster_delete(roster_id):
+    from models import SavedRoster
+    sr = SavedRoster.query.get_or_404(roster_id)
+    if sr.created_by != current_user.id and not current_user.is_admin():
+        flash(t()['flash_access_denied'], 'error')
+        return redirect(url_for('main.saved_rosters_list'))
+    db.session.delete(sr)
+    db.session.commit()
+    flash(t()['roster_deleted'], 'success')
+    return redirect(url_for('main.saved_rosters_list'))
