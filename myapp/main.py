@@ -593,6 +593,19 @@ def roster_view():
     clean_groups = [[_clean(p) for p in g] for g in groups]
     full_pool_clean = [_clean(p) for p in all_players]
 
+    # Store roster data server-side in a temp file (session too small for large rosters)
+    import tempfile, pickle
+    roster_tmp = {
+        'groups':       clean_groups,
+        'columns':      columns_used or [],
+        'player_pool':  full_pool_clean,
+        'tier_labels':  tier_labels,
+        'source_files': source_files,
+    }
+    tmp_path = os.path.join(current_app.config['UPLOAD_FOLDER'], f'_roster_tmp_{current_user.id}.pkl')
+    with open(tmp_path, 'wb') as f:
+        pickle.dump(roster_tmp, f)
+
     return render_template('roster_view.html',
                            groups=clean_groups,
                            group_stats=group_stats,
@@ -614,25 +627,30 @@ def roster_view():
 @login_required
 def roster_save():
     from models import SavedRoster
+    import traceback
     tr = t()
 
-    groups_json  = request.form.get('groups_data', '[]')
-    columns_json = request.form.get('columns_data', '[]')
-    pool_json    = request.form.get('player_pool', '[]')
-    battle_type  = request.form.get('battle_type', '')
-    clan_mode    = request.form.get('clan_mode', 'Standard')
-    tier_labels_json = request.form.get('tier_labels', 'null')
+    import pickle
+    tmp_path = os.path.join(current_app.config['UPLOAD_FOLDER'], f'_roster_tmp_{current_user.id}.pkl')
+    if not os.path.exists(tmp_path):
+        flash('Session expired — please regenerate the roster first.', 'error')
+        return redirect(url_for('main.roster_select'))
+    with open(tmp_path, 'rb') as f:
+        save_data = pickle.load(f)
+
+    battle_type = session.get('roster_battle_type', '')
+    clan_mode   = session.get('roster_clan_mode', 'Standard')
 
     config = {
-        'battle_type':   battle_type,
-        'clan_mode':     clan_mode,
-        'priority':      session.get('roster_priority'),
-        'online_only':   session.get('roster_online_only'),
-        'distribution':  session.get('roster_distribution'),
-        'num_battles':   session.get('roster_num_battles'),
-        'active_classes':session.get('roster_active_classes'),
-        'source_files':  request.form.get('source_files', '[]'),
-        'tier_labels':   json.loads(tier_labels_json) if tier_labels_json != 'null' else None,
+        'battle_type':    battle_type,
+        'clan_mode':      clan_mode,
+        'priority':       session.get('roster_priority'),
+        'online_only':    session.get('roster_online_only'),
+        'distribution':   session.get('roster_distribution'),
+        'num_battles':    session.get('roster_num_battles'),
+        'active_classes': session.get('roster_active_classes'),
+        'source_files':   save_data.get('source_files', []),
+        'tier_labels':    save_data.get('tier_labels'),
     }
 
     today = date.today().strftime('%Y-%m-%d')
@@ -644,15 +662,16 @@ def roster_save():
             created_by=current_user.id,
             battle_type=battle_type,
             config=json.dumps(config),
-            groups_data=groups_json,
-            columns_data=columns_json,
-            player_pool=pool_json,
+            groups_data=json.dumps(save_data.get('groups', [])),
+            columns_data=json.dumps(save_data.get('columns', [])),
+            player_pool=json.dumps(save_data.get('player_pool', [])),
             overrides='{}',
         )
         db.session.add(sr)
         db.session.commit()
     except Exception as e:
         db.session.rollback()
+        current_app.logger.error(f'roster_save error: {traceback.format_exc()}')
         flash(f'Could not save roster: {e}', 'error')
         return redirect(url_for('main.roster_view'))
 

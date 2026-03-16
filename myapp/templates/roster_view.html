@@ -97,15 +97,8 @@
   {% endfor %}
 </div>
 
-<!-- Save form -->
+<!-- Save form — data is stored server-side in session -->
 <form method="POST" action="{{ url_for('main.roster_save') }}" style="margin-top:28px;">
-  <input type="hidden" name="groups_data"  value="{{ groups | tojson | e }}"/>
-  <input type="hidden" name="columns_data" value="{{ columns | tojson | e }}"/>
-  <input type="hidden" name="player_pool"  value="{{ full_pool | tojson | e }}"/>
-  <input type="hidden" name="battle_type"  value="{{ battle_type }}"/>
-  <input type="hidden" name="clan_mode"    value="{{ clan_mode }}"/>
-  <input type="hidden" name="tier_labels"  value="{{ tier_labels | tojson if tier_labels else 'null' }}"/>
-  <input type="hidden" name="source_files" value="{{ source_files | tojson | e }}"/>
   <div style="display:flex;gap:12px;">
     <button type="submit" class="btn btn-primary">{{ t.roster_save_btn }} ↓</button>
     <a href="{{ url_for('main.roster_config') }}?ids={{ session.get('roster_ids',[])|join(',') }}" class="btn btn-ghost">{{ t.roster_reconfigure }}</a>
