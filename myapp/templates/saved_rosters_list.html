@@ -25,6 +25,7 @@
       <td style="color:var(--muted);font-size:12px;">{{ sr.created_at.strftime('%d %b %Y %H:%M') }}</td>
       <td style="display:flex;gap:8px;">
         <a href="{{ url_for('main.saved_roster_view', roster_id=sr.id) }}" class="btn btn-ghost btn-sm">{{ t.manage_btn_view }}</a>
+        <a href="{{ url_for('main.saved_roster_export', roster_id=sr.id) }}" class="btn btn-ghost btn-sm">{{ t.roster_export_btn }}</a>
         <form method="POST" action="{{ url_for('main.saved_roster_delete', roster_id=sr.id) }}"
               onsubmit="return confirm('{{ t.manage_btn_delete }} {{ sr.name }}?')">
           <button type="submit" class="btn btn-danger btn-sm">{{ t.manage_btn_delete }}</button>

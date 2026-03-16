@@ -214,6 +214,7 @@ TRANSLATIONS = {
         'saved_rosters_col_by': 'Created by',
         'saved_rosters_col_date': 'Date',
         'saved_rosters_empty': 'No saved rosters yet.',
+        'roster_export_btn': 'Export Excel',
 
         # Footer
         'footer': 'DataFlow · built with Flask',
@@ -437,6 +438,7 @@ TRANSLATIONS = {
         'saved_rosters_col_by': 'Utworzone przez',
         'saved_rosters_col_date': 'Data',
         'saved_rosters_empty': 'Brak zapisanych składów.',
+        'roster_export_btn': 'Eksportuj Excel',
 
         # Footer
         'footer': 'DataFlow · zbudowano z Flask',

@@ -121,6 +121,7 @@
 <div style="margin-top:28px;display:flex;gap:12px;">
   <button type="submit" class="btn btn-primary">{{ t.roster_save_overrides }} ✓</button>
   <a href="{{ url_for('main.saved_rosters_list') }}" class="btn btn-ghost">← {{ t.saved_rosters_title }}</a>
+  <a href="{{ url_for('main.saved_roster_export', roster_id=sr.id) }}" class="btn btn-ghost">{{ t.roster_export_btn }} ↓</a>
   <form method="POST" action="{{ url_for('main.saved_roster_delete', roster_id=sr.id) }}"
         onsubmit="return confirm('{{ t.manage_btn_delete }} {{ sr.name }}?')" style="margin:0;">
     <button type="submit" class="btn btn-danger">{{ t.manage_btn_delete }}</button>

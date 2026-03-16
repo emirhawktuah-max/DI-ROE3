@@ -778,3 +778,218 @@ def saved_roster_delete(roster_id):
     db.session.commit()
     flash(t()['roster_deleted'], 'success')
     return redirect(url_for('main.saved_rosters_list'))
+
+
+@main_bp.route('/saved-rosters/<int:roster_id>/export')
+@login_required
+def saved_roster_export(roster_id):
+    from models import SavedRoster
+    from openpyxl import Workbook
+    from openpyxl.styles import (Font, PatternFill, Alignment,
+                                  Border, Side, GradientFill)
+    from openpyxl.utils import get_column_letter
+    from io import BytesIO
+    from flask import send_file
+
+    sr = SavedRoster.query.get_or_404(roster_id)
+    if sr.created_by != current_user.id and not current_user.is_admin():
+        flash(t()['flash_access_denied'], 'error')
+        return redirect(url_for('main.saved_rosters_list'))
+
+    groups      = json.loads(sr.groups_data)
+    columns     = json.loads(sr.columns_data)
+    overrides   = json.loads(sr.overrides)
+    config      = json.loads(sr.config)
+    tier_labels = config.get('tier_labels')
+
+    # Apply overrides
+    display_groups = []
+    for gi, group in enumerate(groups):
+        dg = []
+        for si, player in enumerate(group):
+            key = f'{gi}:{si}'
+            dg.append(overrides.get(key, player))
+        display_groups.append(dg)
+
+    wb = Workbook()
+    wb.remove(wb.active)  # remove default sheet
+
+    # ---- Styles ----
+    accent_hex  = 'C8F07A'   # green accent
+    dark_hex    = '0F0F0F'
+    surface_hex = '171717'
+    border_hex  = '2A2A2A'
+    muted_hex   = '666666'
+
+    tier_colours = {
+        '8': ('2E1A0F', 'F0A060'),
+        '4': ('1A2E1A', '70C070'),
+        '2': ('0F1E2E', '60A0F0'),
+        '1': ('2E0F0F', 'F07070'),
+    }
+    class_colours = {
+        'Nekromanta':     ('1A1A2E', 'A0A0F0'),
+        'Barbarzyńca':    ('2E1A0F', 'F0A060'),
+        'Łowca demonów':  ('1A2E1A', '70C070'),
+        'Rycerz krwi':    ('2E0F0F', 'F07070'),
+        'Czarownik':      ('2A1A2E', 'C070E0'),
+        'Mnich':          ('1A2A2E', '60C0D0'),
+        'Krzyżowiec':     ('2E2A0F', 'E0D060'),
+        'Sztormiciel':    ('0F1E2E', '60A0F0'),
+        'Druid':          ('1A2E20', '60D090'),
+    }
+
+    def _fill(hex_col):
+        return PatternFill('solid', start_color=hex_col, fgColor=hex_col)
+
+    def _font(hex_col, bold=False, size=10, name='Arial'):
+        return Font(color=hex_col, bold=bold, size=size, name=name)
+
+    def _border():
+        s = Side(style='thin', color=border_hex)
+        return Border(left=s, right=s, top=s, bottom=s)
+
+    def _center():
+        return Alignment(horizontal='center', vertical='center', wrap_text=True)
+
+    def _left():
+        return Alignment(horizontal='left', vertical='center', wrap_text=False)
+
+    # ---- Summary sheet ----
+    ws_sum = wb.create_sheet('Summary')
+    ws_sum.sheet_view.showGridLines = False
+    ws_sum.column_dimensions['A'].width = 26
+    ws_sum.column_dimensions['B'].width = 36
+
+    ws_sum['A1'] = sr.name
+    ws_sum['A1'].font = Font(name='Arial', bold=True, size=14, color=accent_hex)
+    ws_sum['A1'].fill = _fill(dark_hex)
+    ws_sum.merge_cells('A1:B1')
+    ws_sum.row_dimensions[1].height = 28
+
+    meta = [
+        ('Battle type',    sr.battle_type),
+        ('Clan mode',      config.get('clan_mode', 'Standard')),
+        ('Priority',       config.get('priority', '')),
+        ('Player pool',    config.get('online_only', '')),
+        ('Distribution',   config.get('distribution', '')),
+        ('Battles',        config.get('num_battles', '')),
+        ('Created by',     sr.creator.username),
+        ('Created at',     sr.created_at.strftime('%d %b %Y %H:%M')),
+    ]
+    for row_i, (k, v) in enumerate(meta, start=2):
+        ws_sum.cell(row_i, 1, k).font  = Font(name='Arial', size=10, color=muted_hex)
+        ws_sum.cell(row_i, 1, k).fill  = _fill(surface_hex)
+        ws_sum.cell(row_i, 2, str(v)).font = Font(name='Arial', size=10, color='E8E8E8')
+        ws_sum.cell(row_i, 2, str(v)).fill = _fill(surface_hex)
+
+    # Source files
+    sf = config.get('source_files', [])
+    if isinstance(sf, str):
+        sf = json.loads(sf)
+    r = len(meta) + 2
+    ws_sum.cell(r, 1, 'Source files').font = Font(name='Arial', size=10, color=muted_hex, bold=True)
+    ws_sum.cell(r, 1).fill = _fill(surface_hex)
+    for f in sf:
+        r += 1
+        ws_sum.cell(r, 1, f).font = Font(name='Arial', size=10, color=accent_hex)
+        ws_sum.cell(r, 1).fill = _fill(surface_hex)
+        ws_sum.merge_cells(f'A{r}:B{r}')
+
+    # ---- One sheet per battle ----
+    for gi, group in enumerate(display_groups):
+        tier = tier_labels[gi] if tier_labels and gi < len(tier_labels) else None
+        sheet_name = f'Battle {gi+1}' + (f' [{tier}]' if tier else '')
+        ws = wb.create_sheet(sheet_name[:31])
+        ws.sheet_view.showGridLines = False
+
+        # Header row
+        header_cols = ['#'] + columns
+        col_widths  = [5] + [max(14, len(c)+2) for c in columns]
+
+        # Tier colour for header bg
+        if tier and tier in tier_colours:
+            hdr_bg, hdr_fg = tier_colours[tier]
+        else:
+            hdr_bg, hdr_fg = surface_hex, accent_hex
+
+        ws.row_dimensions[1].height = 22
+        for ci, (hdr, w) in enumerate(zip(header_cols, col_widths), start=1):
+            cell = ws.cell(1, ci, hdr)
+            cell.font      = Font(name='Arial', bold=True, size=9,
+                                  color=hdr_fg)
+            cell.fill      = _fill(hdr_bg)
+            cell.alignment = _center()
+            cell.border    = _border()
+            ws.column_dimensions[get_column_letter(ci)].width = w
+
+        # Data rows
+        for ri, player in enumerate(group, start=2):
+            ws.row_dimensions[ri].height = 18
+            # Row background alternating
+            row_bg = dark_hex if ri % 2 == 0 else surface_hex
+
+            # # column
+            cell = ws.cell(ri, 1, ri - 1)
+            cell.font      = Font(name='Arial', size=9, color=muted_hex)
+            cell.fill      = _fill(row_bg)
+            cell.alignment = _center()
+            cell.border    = _border()
+
+            for ci, col in enumerate(columns, start=2):
+                val = player.get(col, '')
+                cell = ws.cell(ri, ci, str(val) if val != '' else '')
+                cell.fill      = _fill(row_bg)
+                cell.alignment = _left()
+                cell.border    = _border()
+
+                if col == 'Nazwa':
+                    cell.font = Font(name='Arial', bold=True, size=9,
+                                     color='E8E8E8')
+                elif col == 'Klasa':
+                    cls_bg, cls_fg = class_colours.get(
+                        str(val), (surface_hex, muted_hex))
+                    cell.fill = _fill(cls_bg)
+                    cell.font = Font(name='Arial', size=9, bold=True,
+                                     color=cls_fg)
+                    cell.alignment = _center()
+                elif col == 'Rezonowanie':
+                    cell.font = Font(name='Arial', size=9, color='E8E8E8')
+                    cell.alignment = _center()
+                elif col == 'Ranking udziału':
+                    if str(val) == 'Poza rankingiem' or val == '':
+                        cell.font = Font(name='Arial', size=9, color=muted_hex,
+                                         italic=True)
+                    else:
+                        cell.font = Font(name='Arial', size=9, color='E8E8E8')
+                    cell.alignment = _center()
+                else:
+                    cell.font = Font(name='Arial', size=9, color='E8E8E8')
+
+        # Summary row at bottom
+        sr_row = len(group) + 2
+        ws.row_dimensions[sr_row].height = 16
+        avg = round(sum(
+            int(p.get('Rezonowanie', 0) or 0) for p in group
+        ) / len(group)) if group else 0
+        summary_text = f'{len(group)} players  ·  avg reso: {avg}'
+        cell = ws.cell(sr_row, 1, summary_text)
+        cell.font = Font(name='Arial', size=8, color=accent_hex, italic=True)
+        cell.fill = _fill(dark_hex)
+        ws.merge_cells(
+            start_row=sr_row, start_column=1,
+            end_row=sr_row, end_column=len(header_cols)
+        )
+
+    # ---- Stream to browser ----
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    safe_name = sr.name.replace(' ', '_')
+    return send_file(
+        buf,
+        as_attachment=True,
+        download_name=f'{safe_name}.xlsx',
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
