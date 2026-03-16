@@ -790,7 +790,6 @@ def saved_roster_export(roster_id):
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.utils import get_column_letter
     from io import BytesIO
-    from flask import send_file
 
     # --- Load roster ---
     sr = SavedRoster.query.get_or_404(roster_id)
@@ -971,14 +970,16 @@ def saved_roster_export(roster_id):
         buf = BytesIO()
         wb.save(buf)
         buf.seek(0)
+        xlsx_bytes = buf.getvalue()
 
         safe_name = (sr.name or 'roster').replace(' ', '_')
-        return send_file(
-            buf,
-            as_attachment=True,
-            download_name=f'{safe_name}.xlsx',
+        response = current_app.response_class(
+            xlsx_bytes,
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
+        response.headers['Content-Disposition'] = f'attachment; filename="{safe_name}.xlsx"'
+        response.headers['Content-Length'] = len(xlsx_bytes)
+        return response
 
     except Exception as e:
         current_app.logger.error(f'Export error: {traceback.format_exc()}')
