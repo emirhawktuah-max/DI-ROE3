@@ -636,6 +636,12 @@ def roster_view():
     group_stats = [{'avg_reso': _avg_reso(g), 'count': len(g)} for g in groups]
 
     # Strip internal _ keys from groups and pool before passing to template
+    # Rename _boosted -> boosted so it survives the underscore-strip
+    for g in groups:
+        for p in g:
+            if p.get('_boosted'):
+                p['boosted'] = True
+
     def _clean(p):
         return {k: v for k, v in p.items() if not k.startswith('_')}
 

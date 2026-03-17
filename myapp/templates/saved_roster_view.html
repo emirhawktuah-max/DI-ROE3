@@ -115,7 +115,8 @@ tr.drag-over td{background:rgba(200,240,122,.15) !important;outline:2px dashed v
         {% for col in columns %}
           {% set val = player.get(col, '') %}
           {% if col == 'Nazwa' %}
-            <td class="name-cell" data-name="{{ val }}" style="font-weight:500;font-size:12px;">{{ val }}</td>
+            <td class="name-cell" data-name="{{ val }}" style="font-weight:500;font-size:12px;">
+              {% if player.get('boosted') %}<span title="PowerPlayer +20%" style="color:#f0c060;margin-right:4px;font-size:13px;">⚡</span>{% endif %}{{ val }}</td>
           {% elif col == 'Klasa' %}
             <td><span class="class-badge cls-{{ val|replace(' ','_') if val else 'default' }}">{{ val }}</span></td>
           {% elif col == 'Ranking udziału' %}
