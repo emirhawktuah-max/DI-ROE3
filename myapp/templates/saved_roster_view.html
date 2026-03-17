@@ -22,7 +22,7 @@
 .battle-table th{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);padding:6px 10px;text-align:left;background:#1a1a1a;}
 .battle-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
 .battle-table tr:last-child td{border-bottom:none;}
-.battle-table tr:hover td{background:rgba(255,255,255,.02);}
+.battle-table tbody tr:hover td{background:rgba(255,255,255,.03);}
 .class-badge{display:inline-block;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:500;white-space:nowrap;}
 .cls-Nekromanta{background:#1a1a2e;color:#a0a0f0;border:1px solid #2a2a4e;}
 .cls-Barbarzyńca{background:#2e1a0f;color:#f0a060;border:1px solid #4e2a0f;}
@@ -37,56 +37,26 @@
 .rank-outside{color:var(--muted);font-size:10px;font-style:italic;}
 
 /* Override dropdown */
-.override-select {
-  background:var(--bg); border:1px solid var(--border); color:var(--text);
-  font-family:var(--mono); font-size:11px; padding:3px 6px;
-  border-radius:var(--radius); outline:none; width:100%;
-  transition:border-color .15s;
-}
+.override-select{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:3px 6px;border-radius:var(--radius);outline:none;width:100%;transition:border-color .15s;}
 .override-select:focus{border-color:var(--accent);}
 .override-select.changed{border-color:var(--accent2);}
-.dup-row td { background: rgba(240,80,80,.15) !important; }
-.dup-row td:first-child { border-left: 3px solid #f07a7a; }
-.dup-name {
-  color: #f07a7a !important;
-  font-weight: 700 !important;
-  position: relative;
-}
-.dup-badge {
-  display: inline-block;
-  background: #f07a7a;
-  color: #0f0f0f;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 99px;
-  margin-left: 5px;
-  vertical-align: middle;
-  text-transform: uppercase;
-  letter-spacing: .05em;
-}
-#dup-banner {
-  display: none;
-  padding: 12px 16px;
-  background: #2e0f0f;
-  border: 1px solid #f07a7a;
-  border-radius: var(--radius);
-  color: #f07a7a;
-  font-size: 13px;
-  margin-bottom: 20px;
-}
-#dup-banner.visible { display: block; }
-#no-dup-banner {
-  display: none;
-  padding: 12px 16px;
-  background: #1a2e0f;
-  border: 1px solid #3a5c1a;
-  border-radius: var(--radius);
-  color: var(--accent);
-  font-size: 13px;
-  margin-bottom: 20px;
-}
-#no-dup-banner.visible { display: block; }
+
+/* Duplicate highlight */
+.dup-row td{background:rgba(240,80,80,.15) !important;}
+.dup-row td:first-child{border-left:3px solid #f07a7a;}
+.dup-name{color:#f07a7a !important;font-weight:700 !important;}
+.dup-badge{display:inline-block;background:#f07a7a;color:#0f0f0f;font-size:9px;font-weight:700;padding:1px 5px;border-radius:99px;margin-left:5px;vertical-align:middle;text-transform:uppercase;letter-spacing:.05em;}
+#dup-banner{display:none;padding:12px 16px;background:#2e0f0f;border:1px solid #f07a7a;border-radius:var(--radius);color:#f07a7a;font-size:13px;margin-bottom:20px;}
+#dup-banner.visible{display:block;}
+#no-dup-banner{display:none;padding:12px 16px;background:#1a2e0f;border:1px solid #3a5c1a;border-radius:var(--radius);color:var(--accent);font-size:13px;margin-bottom:20px;}
+#no-dup-banner.visible{display:block;}
+
+/* Drag and drop */
+.drag-handle{cursor:grab;color:var(--muted);font-size:14px;padding:0 6px 0 0;user-select:none;flex-shrink:0;}
+.drag-handle:active{cursor:grabbing;}
+tr.dragging{opacity:.4;}
+tr.drag-over td{background:rgba(200,240,122,.15) !important;outline:2px dashed var(--accent);}
+.drag-hint{font-size:11px;color:var(--muted);margin-left:8px;font-style:italic;}
 </style>
 {% endblock %}
 
@@ -125,11 +95,22 @@
       </div>
     </div>
     <table class="battle-table">
-      <thead><tr><th>#</th>{% for col in columns %}<th>{{ col }}</th>{% endfor %}<th style="color:var(--accent);font-size:10px;">{{ t.roster_override_col }}</th></tr></thead>
-      <tbody>
+      <thead>
+        <tr>
+          <th style="width:28px;"></th>
+          <th>#</th>
+          {% for col in columns %}<th>{{ col }}</th>{% endfor %}
+          <th style="color:var(--accent);font-size:10px;">{{ t.roster_override_col }}</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-{{ gi }}" data-gi="{{ gi }}">
       {% for player in group %}
       {% set si = loop.index0 %}
-      <tr>
+      <tr draggable="true"
+          data-gi="{{ gi }}"
+          data-si="{{ si }}"
+          data-player='{{ player | tojson | e }}'>
+        <td style="padding:4px 6px;"><span class="drag-handle" title="Drag to swap">⠿</span></td>
         <td style="color:var(--muted);font-size:10px;">{{ loop.index }}</td>
         {% for col in columns %}
           {% set val = player.get(col, '') %}
@@ -163,24 +144,108 @@
 <div id="dup-banner"></div>
 <div id="no-dup-banner">✓ No duplicate names found.</div>
 
-<div style="margin-top:28px;display:flex;gap:12px;flex-wrap:wrap;">
+<div style="margin-top:28px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
   <button type="submit" class="btn btn-primary">{{ t.roster_save_overrides }} ✓</button>
-  <button type="button" class="btn btn-ghost" onclick="checkDuplicates()" id="dup-btn">⚠ Check Duplicates</button>
+  <button type="button" class="btn btn-ghost" onclick="checkDuplicates()">⚠ Check Duplicates</button>
   <a href="{{ url_for('main.saved_rosters_list') }}" class="btn btn-ghost">← {{ t.saved_rosters_title }}</a>
   <a href="{{ url_for('main.saved_roster_export', roster_id=sr.id) }}" class="btn btn-ghost">{{ t.roster_export_btn }} ↓</a>
   <form method="POST" action="{{ url_for('main.saved_roster_delete', roster_id=sr.id) }}"
         onsubmit="return confirm('{{ t.manage_btn_delete }} {{ sr.name }}?')" style="margin:0;">
     <button type="submit" class="btn btn-danger">{{ t.manage_btn_delete }}</button>
   </form>
+  <span class="drag-hint">⠿ Drag rows to swap players between battles</span>
 </div>
+
 <script>
+// ─── Drag & Drop swap ────────────────────────────────────────────────
+let dragSrc = null;
+
+document.querySelectorAll('tr[draggable]').forEach(row => {
+  row.addEventListener('dragstart', e => {
+    dragSrc = row;
+    row.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  row.addEventListener('dragend', () => {
+    row.classList.remove('dragging');
+    document.querySelectorAll('.drag-over').forEach(r => r.classList.remove('drag-over'));
+  });
+  row.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (row !== dragSrc) row.classList.add('drag-over');
+  });
+  row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+  row.addEventListener('drop', e => {
+    e.preventDefault();
+    row.classList.remove('drag-over');
+    if (!dragSrc || dragSrc === row) return;
+    swapRows(dragSrc, row);
+  });
+});
+
+function swapRows(rowA, rowB) {
+  // Swap the visible cell content (all tds except handle, index, and select)
+  const colsA = [...rowA.querySelectorAll('td')];
+  const colsB = [...rowB.querySelectorAll('td')];
+
+  // td[0]=handle, td[1]=index, td[2..n-1]=data cols, td[n]=select
+  const dataCount = colsA.length - 3; // exclude handle, index, select
+
+  for (let i = 2; i < 2 + dataCount; i++) {
+    const tmpHTML = colsA[i].innerHTML;
+    const tmpName = colsA[i].dataset ? colsA[i].dataset.name : undefined;
+    colsA[i].innerHTML = colsB[i].innerHTML;
+    colsB[i].innerHTML = tmpHTML;
+    // swap data-name on name-cell
+    if (colsA[i].classList.contains('name-cell') || colsB[i].classList.contains('name-cell')) {
+      const nA = colsA[i].dataset.name;
+      const nB = colsB[i].dataset.name;
+      colsA[i].dataset.name = nB || '';
+      colsB[i].dataset.name = nA || '';
+    }
+  }
+
+  // Swap the override select values
+  const selA = colsA[colsA.length - 1].querySelector('select');
+  const selB = colsB[colsB.length - 1].querySelector('select');
+  if (selA && selB) {
+    const tmpVal = selA.value;
+    const tmpOpts = selA.innerHTML;
+    // We want to swap the current selected value shown
+    // Find matching options in each
+    const valA = selA.value;
+    const valB = selB.value;
+    // Try to select B's value in A's select and vice versa
+    setSelectValue(selA, valB);
+    setSelectValue(selB, valA);
+    selA.classList.add('changed');
+    selB.classList.add('changed');
+  }
+
+  // Flash highlight to confirm swap
+  [rowA, rowB].forEach(r => {
+    r.style.transition = 'background .1s';
+    r.querySelectorAll('td').forEach(td => {
+      td.style.background = 'rgba(200,240,122,.2)';
+      setTimeout(() => td.style.background = '', 400);
+    });
+  });
+}
+
+function setSelectValue(sel, val) {
+  // Try to select the option with given value; if not found, keep current
+  for (let opt of sel.options) {
+    if (opt.value === val) { sel.value = val; return; }
+  }
+}
+
+// ─── Duplicate check ─────────────────────────────────────────────────
 function checkDuplicates() {
-  // Clear previous highlights
   document.querySelectorAll('.dup-row').forEach(r => r.classList.remove('dup-row'));
   document.querySelectorAll('.dup-badge').forEach(b => b.remove());
   document.querySelectorAll('.name-cell').forEach(c => c.classList.remove('dup-name'));
 
-  // Count all names
   const cells = document.querySelectorAll('.name-cell');
   const counts = {};
   cells.forEach(c => {
@@ -188,9 +253,7 @@ function checkDuplicates() {
     if (name) counts[name] = (counts[name] || 0) + 1;
   });
 
-  // Find duplicates
   const dups = Object.entries(counts).filter(([n, c]) => c > 1);
-
   const banner = document.getElementById('dup-banner');
   const noBanner = document.getElementById('no-dup-banner');
 
@@ -202,31 +265,25 @@ function checkDuplicates() {
   }
 
   noBanner.classList.remove('visible');
-
   const dupNames = new Set(dups.map(([n]) => n));
-  let total = 0;
 
   cells.forEach(cell => {
     const name = cell.dataset.name.trim();
     if (dupNames.has(name)) {
       cell.classList.add('dup-name');
       cell.closest('tr').classList.add('dup-row');
-      // Add badge only once per cell
       if (!cell.querySelector('.dup-badge')) {
         const badge = document.createElement('span');
         badge.className = 'dup-badge';
         badge.textContent = 'DUP';
         cell.appendChild(badge);
       }
-      total++;
     }
   });
 
   const names = dups.map(([n, c]) => `${n} (×${c})`).join(', ');
   banner.textContent = `⚠ ${dups.length} duplicate name${dups.length > 1 ? 's' : ''} found — ${names}`;
   banner.classList.add('visible');
-
-  // Scroll to first duplicate
   const firstDup = document.querySelector('.dup-row');
   if (firstDup) firstDup.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
