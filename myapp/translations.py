@@ -165,6 +165,16 @@ TRANSLATIONS = {
         'attendance_saved': 'Attendance saved.',
         'attendance_count': 'confirmed',
         'attendance_of': 'of',
+        'power_player_col': 'PowerPlayer (+20%)',
+        'power_player_short': 'Power',
+        'power_player_saved': 'Attendance & PowerPlayer saved.',
+        'dup_none': 'No duplicate names found.',
+        'dup_found_prefix': 'Duplicate names found —',
+        'drag_hint': '⠿ Drag rows to swap players between battles',
+        'roster_power_player_label': 'PowerPlayer boost',
+        'opt_power_yes': 'Yes — apply 20% boost',
+        'opt_power_no': 'No boost',
+        'roster_error_no_power': 'Please select a PowerPlayer option.',
 
 'nav_roster': 'Generate Rosters',
         'roster_select_title': 'Generate Rosters',
@@ -251,6 +261,7 @@ TRANSLATIONS = {
         'footer': 'DataFlow · built with Flask',
 
         # Language toggle
+        'select_placeholder': '— select —',
         'lang_switch': 'Polski',
         'lang_code': 'pl',
     },
@@ -420,6 +431,16 @@ TRANSLATIONS = {
         'attendance_saved': 'Zapisano obecność.',
         'attendance_count': 'potwierdzonych',
         'attendance_of': 'z',
+        'power_player_col': 'PowerPlayer (+20%)',
+        'power_player_short': 'Power',
+        'power_player_saved': 'Obecność i PowerPlayer zapisane.',
+        'dup_none': 'Brak zduplikowanych nazw.',
+        'dup_found_prefix': 'Znaleziono zduplikowane nazwy —',
+        'drag_hint': '⠿ Przeciągnij wiersze, aby zamienić graczy między bitwami',
+        'roster_power_player_label': 'Boost PowerPlayer',
+        'opt_power_yes': 'Tak — dodaj boost 20%',
+        'opt_power_no': 'Bez boostu',
+        'roster_error_no_power': 'Wybierz opcję PowerPlayer.',
 
 'nav_roster': 'Generuj Składy',
         'roster_select_title': 'Generuj Składy',
@@ -506,6 +527,7 @@ TRANSLATIONS = {
         'footer': 'DataFlow · zbudowano z Flask',
 
         # Language toggle
+        'select_placeholder': '— wybierz —',
         'lang_switch': 'English',
         'lang_code': 'en',
     }

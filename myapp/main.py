@@ -242,15 +242,19 @@ def view_upload(upload_id):
     # Load existing attendance for this upload
     attendance = Attendance.query.filter_by(upload_id=upload_id).first()
     confirmed = json.loads(attendance.confirmed_rows) if attendance else {}
+    power = json.loads(attendance.power_rows if attendance and attendance.power_rows else '{}')
 
     confirmed_count = sum(1 for v in confirmed.values() if v)
+    power_count = sum(1 for v in power.values() if v)
 
     return render_template('view_upload.html',
                            upload=upload_rec,
                            columns=columns,
                            rows=rows,
                            confirmed=confirmed,
-                           confirmed_count=confirmed_count)
+                           power=power,
+                           confirmed_count=confirmed_count,
+                           power_count=power_count)
 
 
 @main_bp.route('/uploads/<int:upload_id>/attendance', methods=['POST'])
@@ -265,20 +269,25 @@ def save_attendance(upload_id):
     filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], upload_rec.filename)
     df = parse_txt_to_df(filepath)
     confirmed = {}
+    power = {}
     for i in range(len(df)):
         confirmed[str(i)] = f'row_{i}' in request.form
+        power[str(i)]     = f'power_{i}' in request.form
 
     attendance = Attendance.query.filter_by(upload_id=upload_id).first()
     if attendance:
         attendance.confirmed_rows = json.dumps(confirmed)
+        attendance.power_rows     = json.dumps(power)
         attendance.saved_at = __import__('datetime').datetime.utcnow()
     else:
-        attendance = Attendance(upload_id=upload_id, confirmed_rows=json.dumps(confirmed))
+        attendance = Attendance(upload_id=upload_id,
+                                confirmed_rows=json.dumps(confirmed),
+                                power_rows=json.dumps(power))
         db.session.add(attendance)
     db.session.commit()
 
     tr = t()
-    flash(tr['attendance_saved'], 'success')
+    flash(tr['power_player_saved'], 'success')
     return redirect(url_for('main.view_upload', upload_id=upload_id))
 
 
@@ -292,6 +301,7 @@ PRIORITY_OPTIONS    = ['Rezonowanie', 'Class']
 ONLINE_OPTIONS      = ['Only confirmed online', 'Prioritize Online', 'All players']
 DIST_OPTIONS        = ['Max power', 'Even distribution']
 ROE_BATTLES_OPTIONS = ['7', '10']
+POWER_PLAYER_OPTIONS = ['Yes — apply 20% boost', 'No boost']
 
 ALL_CLASSES = [
     'Nekromanta', 'Barbarzyńca', 'Łowca demonów', 'Rycerz krwi',
@@ -463,19 +473,21 @@ def roster_config():
         # Build value->label map using current language
         tr = t()
         opt_labels = {
-            'RoE':                    tr['opt_roe'],
-            'Clan Battle':            tr['opt_clan_battle'],
-            'Standard':               tr['opt_standard'],
-            '8 4 2 1':                tr['opt_8421'],
-            'Rezonowanie':            tr['opt_reso'],
-            'Class':                  tr['opt_class'],
-            'Only confirmed online':  tr['opt_online_only'],
-            'Prioritize Online':      tr['opt_prioritize_online'],
-            'All players':            tr['opt_all_players'],
-            'Max power':              tr['opt_max_power'],
-            'Even distribution':      tr['opt_even_dist'],
-            '7':                      tr['opt_7'],
-            '10':                     tr['opt_10'],
+            'RoE':                       tr['opt_roe'],
+            'Clan Battle':               tr['opt_clan_battle'],
+            'Standard':                  tr['opt_standard'],
+            '8 4 2 1':                   tr['opt_8421'],
+            'Rezonowanie':               tr['opt_reso'],
+            'Class':                     tr['opt_class'],
+            'Only confirmed online':     tr['opt_online_only'],
+            'Prioritize Online':         tr['opt_prioritize_online'],
+            'All players':               tr['opt_all_players'],
+            'Max power':                 tr['opt_max_power'],
+            'Even distribution':         tr['opt_even_dist'],
+            '7':                         tr['opt_7'],
+            '10':                        tr['opt_10'],
+            'Yes — apply 20% boost':     tr['opt_power_yes'],
+            'No boost':                  tr['opt_power_no'],
         }
         return render_template('roster_config.html',
                                uploads=uploads, ids_str=ids_str,
@@ -485,6 +497,7 @@ def roster_config():
                                online_options=ONLINE_OPTIONS,
                                dist_options=DIST_OPTIONS,
                                roe_battles_options=ROE_BATTLES_OPTIONS,
+                               power_player_options=POWER_PLAYER_OPTIONS,
                                all_classes=ALL_CLASSES,
                                opt_labels=opt_labels,
                                **kw)
@@ -497,6 +510,7 @@ def roster_config():
         distribution  = request.form.get('distribution', '').strip()
         roe_battles   = request.form.get('roe_battles', '10').strip()
         active_classes= request.form.getlist('active_classes')
+        power_player  = request.form.get('power_player', '').strip()
 
         errors = []
         if battle_type not in BATTLE_TYPES:
@@ -507,6 +521,8 @@ def roster_config():
             errors.append(tr['roster_error_no_online'])
         if distribution not in DIST_OPTIONS:
             errors.append(tr['roster_error_no_dist'])
+        if power_player not in POWER_PLAYER_OPTIONS:
+            errors.append(tr['roster_error_no_power'])
         if not active_classes:
             errors.append(tr['roster_error_no_classes'])
 
@@ -530,6 +546,7 @@ def roster_config():
         session['roster_distribution']= distribution
         session['roster_num_battles'] = num_battles
         session['roster_active_classes'] = active_classes
+        session['roster_power_player'] = power_player
         return redirect(url_for('main.roster_view'))
 
     return _render_config()
@@ -547,6 +564,7 @@ def roster_view():
     distribution   = session.get('roster_distribution', 'Max power')
     num_battles    = session.get('roster_num_battles', 12)
     active_classes = session.get('roster_active_classes', ALL_CLASSES)
+    power_player   = session.get('roster_power_player', 'No boost')
 
     if not upload_ids or not battle_type:
         flash(tr['roster_error_no_files'], 'error')
@@ -573,9 +591,11 @@ def roster_view():
         if columns_used is None:
             columns_used = cols[1:-1]
 
+        power_map = json.loads(attendance.power_rows if attendance and attendance.power_rows else '{}')
         rows = df.fillna('').to_dict(orient='records')
         for i, row in enumerate(rows):
             row['_confirmed'] = confirmed_map.get(str(i), False)
+            row['_power']     = power_map.get(str(i), False)
             row['_source']    = upload_rec.original_filename
             all_players.append(row)
         source_files.append(upload_rec.original_filename)
@@ -591,6 +611,17 @@ def roster_view():
     # Class filter
     all_players = [p for p in all_players
                    if p.get('Klasa', '') in active_classes]
+
+    # PowerPlayer boost — mark players who are power_player and inflate their reso
+    if power_player == 'Yes — apply 20% boost':
+        for p in all_players:
+            if p.get('_power', False):
+                try:
+                    original = int(p.get('Rezonowanie', 0) or 0)
+                    p['Rezonowanie'] = str(round(original * 1.20))
+                    p['_boosted'] = True
+                except Exception:
+                    pass
 
     # Online filter
     total_slots = num_battles * 8
@@ -650,6 +681,7 @@ def roster_view():
                            source_files=source_files,
                            total_players=len(pool),
                            full_pool=full_pool_clean,
+                           power_player=power_player,
                            opt_labels=opt_labels)
 
 

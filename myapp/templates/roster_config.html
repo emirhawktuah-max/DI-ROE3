@@ -187,6 +187,21 @@
 
         <hr class="section-divider"/>
 
+        <!-- PowerPlayer -->
+        <div class="form-group">
+          <label>{{ t.roster_power_player_label }}</label>
+          <div class="option-group">
+            {% for opt in power_player_options %}
+            <label class="option-pill">
+              <input type="radio" name="power_player" value="{{ opt }}" required/>
+              <span class="option-pill-label">{{ opt_labels[opt] }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <hr class="section-divider"/>
+
         <div style="display:flex;gap:12px;margin-top:8px;">
           <button type="submit" class="btn btn-primary">{{ t.roster_config_submit }}</button>
           <a href="{{ url_for('main.roster_select') }}" class="btn btn-ghost">← {{ t.upload_cancel }}</a>

@@ -70,6 +70,8 @@ class Attendance(db.Model):
     upload_id = db.Column(db.Integer, db.ForeignKey('uploads.id'), nullable=False)
     # JSON dict: { "1": true, "3": true, ... } — keys are row index strings
     confirmed_rows = db.Column(db.Text, default='{}')
+    # JSON dict: { "1": true, ... } — rows marked as PowerPlayer
+    power_rows = db.Column(db.Text, default='{}')
     saved_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):

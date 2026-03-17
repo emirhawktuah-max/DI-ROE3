@@ -10,7 +10,7 @@
     <div class="form-group">
       <label>{{ t.upload_clan_label }}</label>
       <select name="clan" required>
-        <option value="" disabled selected style="color:var(--muted);">— select —</option>
+        <option value="" disabled selected style="color:var(--muted);">{{ t.select_placeholder }}</option>
         {% for clan in clan_options %}
         <option value="{{ clan }}">{{ clan }}</option>
         {% endfor %}

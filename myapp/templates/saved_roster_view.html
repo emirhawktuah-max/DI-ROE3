@@ -142,7 +142,7 @@ tr.drag-over td{background:rgba(200,240,122,.15) !important;outline:2px dashed v
 </div>
 
 <div id="dup-banner"></div>
-<div id="no-dup-banner">✓ No duplicate names found.</div>
+<div id="no-dup-banner">{{ "✓ " + t.dup_none }}</div>
 
 <div style="margin-top:28px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
   <button type="submit" class="btn btn-primary">{{ t.roster_save_overrides }} ✓</button>
@@ -153,10 +153,13 @@ tr.drag-over td{background:rgba(200,240,122,.15) !important;outline:2px dashed v
         onsubmit="return confirm('{{ t.manage_btn_delete }} {{ sr.name }}?')" style="margin:0;">
     <button type="submit" class="btn btn-danger">{{ t.manage_btn_delete }}</button>
   </form>
-  <span class="drag-hint">⠿ Drag rows to swap players between battles</span>
+  <span class="drag-hint">{{ t.drag_hint }}</span>
 </div>
 
 <script>
+var MSG_NO_DUP    = "{{ '✓ ' + t.dup_none }}";
+var MSG_DUP_FOUND = "{{ '⚠ ' + t.dup_found_prefix }}";
+var MSG_DUP_BADGE = "DUP";
 // ─── Drag & Drop swap ────────────────────────────────────────────────
 let dragSrc = null;
 
@@ -260,7 +263,7 @@ function checkDuplicates() {
   if (dups.length === 0) {
     banner.classList.remove('visible');
     noBanner.classList.add('visible');
-    noBanner.textContent = '✓ No duplicate names found.';
+    noBanner.textContent = MSG_NO_DUP;
     return;
   }
 
@@ -275,14 +278,14 @@ function checkDuplicates() {
       if (!cell.querySelector('.dup-badge')) {
         const badge = document.createElement('span');
         badge.className = 'dup-badge';
-        badge.textContent = 'DUP';
+        badge.textContent = MSG_DUP_BADGE;
         cell.appendChild(badge);
       }
     }
   });
 
   const names = dups.map(([n, c]) => `${n} (×${c})`).join(', ');
-  banner.textContent = `⚠ ${dups.length} duplicate name${dups.length > 1 ? 's' : ''} found — ${names}`;
+  banner.textContent = MSG_DUP_FOUND + ' ' + dups.length + ' (' + names + ')';
   banner.classList.add('visible');
   const firstDup = document.querySelector('.dup-row');
   if (firstDup) firstDup.scrollIntoView({ behavior: 'smooth', block: 'center' });
