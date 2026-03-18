@@ -282,6 +282,7 @@ TRANSLATIONS = {
         'manual_dup_found': 'Duplicates found:',
         'manual_players': 'players',
         'manual_avg_reso': 'avg reso',
+        'manual_select_submit': 'Open Composer →',
         'manual_error_no_files': 'Select at least one file.',
         'manual_error_too_many': 'Maximum 3 files allowed.',
 
@@ -573,6 +574,7 @@ TRANSLATIONS = {
         'manual_dup_found': 'Znaleziono duplikaty:',
         'manual_players': 'graczy',
         'manual_avg_reso': 'śr. reso',
+        'manual_select_submit': 'Otwórz kompozytor →',
         'manual_error_no_files': 'Wybierz co najmniej jeden plik.',
         'manual_error_too_many': 'Maksymalnie 3 pliki.',
 
