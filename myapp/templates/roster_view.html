@@ -90,7 +90,9 @@
         {% for col in columns %}
           {% set val = player[col] %}
           {% if col == 'Nazwa' %}
-            <td style="font-weight:500;font-size:12px;">
+            {% set _sc = ['#e87070','#70a0f0','#60d090'] %}
+            {% set _si = source_color_map.get(player.get('source_file',''),-1) if source_color_map|length>1 else -1 %}
+            <td style="font-weight:500;font-size:12px;color:{{ _sc[_si] if _si>=0 else 'var(--text)' }};">
               {% if player.get('_confirmed') %}<span class="online-dot"></span>{% endif %}{{ val }}
             </td>
           {% elif col == 'Klasa' %}

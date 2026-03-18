@@ -228,7 +228,9 @@ tr.drag-over td{background:rgba(200,240,122,.15) !important;outline:2px dashed v
           {% for col in columns %}
             {% set val = player.get(col, '') %}
             {% if col == 'Nazwa' %}
-              <td class="name-cell" data-name="{{ val }}" style="font-weight:500;font-size:12px;">
+              {% set _sc = ['#e87070','#70a0f0','#60d090'] %}
+              {% set _si = source_color_map.get(player.get('source_file',''),-1) if source_color_map|length>1 else -1 %}
+              <td class="name-cell" data-name="{{ val }}" style="font-weight:500;font-size:12px;color:{{ _sc[_si] if _si>=0 else 'var(--text)' }};">
                 {% if player.get('boosted') %}<span title="PowerPlayer +20%" style="color:#f0c060;margin-right:4px;font-size:13px;">⚡</span>{% endif %}{{ val }}</td>
             {% elif col == 'Klasa' %}
               <td><span class="class-badge cls-{{ val|replace(' ','_') if val else 'default' }}">{{ val }}</span></td>
