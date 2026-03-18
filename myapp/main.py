@@ -803,6 +803,7 @@ def saved_roster_view(roster_id):
                            columns=columns,
                            config=config,
                            player_pool=player_pool,
+                           source_files=sf,
                            source_color_map=source_color_map)
 
 

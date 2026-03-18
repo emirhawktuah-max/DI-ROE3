@@ -174,13 +174,6 @@
 .cls-dot-default       { background: var(--muted); }
 
 
-/* Source file colour coding */
-.player-item[data-src="0"]{border-left:3px solid rgba(240,100,100,.5)!important;background:rgba(240,100,100,.06)!important;}
-.player-item[data-src="1"]{border-left:3px solid rgba(100,150,240,.5)!important;background:rgba(100,150,240,.06)!important;}
-.player-item[data-src="2"]{border-left:3px solid rgba(100,210,130,.5)!important;background:rgba(100,210,130,.06)!important;}
-.battle-player[data-src="0"]{border-left:3px solid rgba(240,100,100,.5)!important;background:rgba(240,100,100,.08)!important;}
-.battle-player[data-src="1"]{border-left:3px solid rgba(100,150,240,.5)!important;background:rgba(100,150,240,.08)!important;}
-.battle-player[data-src="2"]{border-left:3px solid rgba(100,210,130,.5)!important;background:rgba(100,210,130,.08)!important;}
 /* Pool also drop target */
 #pool-list.drop-active {
   background: rgba(200,240,122,.06);
@@ -215,12 +208,12 @@
   <div id="no-dup-banner"></div>
 
   {% if source_files | length > 1 %}
-<div style="display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
-  {% set src_colors = ['rgba(240,100,100,.7)','rgba(100,150,240,.7)','rgba(100,210,130,.7)'] %}
+<div style="display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+  {% set src_clrs = ['#e87070','#70a0f0','#60d090'] %}
   {% for sf in source_files %}
-  <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
-    <span style="width:10px;height:10px;border-radius:2px;background:{{ src_colors[loop.index0] }};flex-shrink:0;"></span>
-    {{ sf }}
+  <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;">
+    <span style="width:8px;height:8px;border-radius:50%;background:{{ src_clrs[loop.index0] }};flex-shrink:0;"></span>
+    <span style="color:{{ src_clrs[loop.index0] }};">{{ sf }}</span>
   </span>
   {% endfor %}
 </div>
@@ -243,10 +236,12 @@
              data-klasa="{{ p.Klasa }}"
              data-player='{{ p | tojson | e }}'
              data-source="pool"
-             data-src="{{ source_color_map.get(p.get('source_file',''), '') if source_color_map|length > 1 else '' }}">
+             data-srcfile="{{ p.get('source_file','') }}">
           <span class="player-class-dot cls-dot-{{ p.Klasa | replace(' ','_') if p.Klasa else 'default' }}"></span>
           {% if p.get('power') %}<span style="color:#f0c060;font-size:11px;">⚡</span>{% endif %}
-          <span class="player-name" title="{{ p.Nazwa }}">{{ p.Nazwa }}</span>
+          {% set src_clrs = ['#e87070','#70a0f0','#60d090'] %}
+          {% set _sci = source_color_map.get(p.get('source_file',''), -1) if source_color_map|length > 1 else -1 %}
+          <span class="player-name" title="{{ p.Nazwa }}" style="color:{{ src_clrs[_sci] if _sci >= 0 else 'var(--text)' }};">{{ p.Nazwa }}</span>
           <span class="player-reso">{{ p.Rezonowanie }}</span>
         </div>
         {% endfor %}
@@ -289,6 +284,13 @@
 <script>
 var SOURCE_COLOR_MAP = {{ source_color_map | tojson }};
 var SOURCE_COUNT = {{ source_color_map | length }};
+var SRC_COLORS = ['#e87070','#70a0f0','#60d090'];
+function getSrcColor(player) {
+  if (SOURCE_COUNT <= 1) return '';
+  var sf = player['source_file'] || '';
+  var idx = SOURCE_COLOR_MAP[sf];
+  return (idx !== undefined && SRC_COLORS[idx]) ? SRC_COLORS[idx] : '';
+}
 var MSG_DUP_NONE  = "{{ t.manual_dup_none }}";
 var MSG_DUP_FOUND = "{{ t.manual_dup_found }}";
 var MSG_PLAYERS   = "{{ t.manual_players }}";
@@ -383,12 +385,12 @@ function makeBattlePlayer(player, battleIdx) {
   div.dataset.battle = battleIdx;
 
   var cls = (player['Klasa'] || 'default').replace(/ /g,'_');
-  var srcIdx = (SOURCE_COUNT > 1 && player['source_file']) ? (SOURCE_COLOR_MAP[player['source_file']] !== undefined ? SOURCE_COLOR_MAP[player['source_file']] : '') : '';
-  if (srcIdx !== '') div.dataset.src = srcIdx;
+
+  var srcCol = getSrcColor(player);
   div.innerHTML =
     '<span class="player-class-dot cls-dot-' + cls + '"></span>' +
     (player['power'] || player['boosted'] ? '<span style="color:#f0c060;font-size:10px;">⚡</span>' : '') +
-    '<span class="bp-name" title="' + (player['Nazwa']||'') + '">' + (player['Nazwa']||'') + '</span>' +
+    '<span class="bp-name" title="' + (player['Nazwa']||'') + '" style="' + (srcCol ? 'color:'+srcCol : '') + '">' + (player['Nazwa']||'') + '</span>' +
     '<span class="bp-reso">' + (player['Rezonowanie']||'') + '</span>';
 
   div.addEventListener('dragstart', e => {
@@ -410,12 +412,12 @@ function makePoolItem(player) {
   div.dataset.source = 'pool';
 
   var cls = (player['Klasa'] || 'default').replace(/ /g,'_');
-  var srcIdxP = (SOURCE_COUNT > 1 && player['source_file']) ? (SOURCE_COLOR_MAP[player['source_file']] !== undefined ? SOURCE_COLOR_MAP[player['source_file']] : '') : '';
-  if (srcIdxP !== '') div.dataset.src = srcIdxP;
+
+  var srcColP = getSrcColor(player);
   div.innerHTML =
     '<span class="player-class-dot cls-dot-' + cls + '"></span>' +
     (player['power'] || player['boosted'] ? '<span style="color:#f0c060;font-size:11px;">⚡</span>' : '') +
-    '<span class="player-name" title="' + (player['Nazwa']||'') + '">' + (player['Nazwa']||'') + '</span>' +
+    '<span class="player-name" title="' + (player['Nazwa']||'') + '" style="' + (srcColP ? 'color:'+srcColP : '') + '">' + (player['Nazwa']||'') + '</span>' +
     '<span class="player-reso">' + (player['Rezonowanie']||'') + '</span>';
   return div;
 }
