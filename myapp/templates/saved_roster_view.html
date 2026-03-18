@@ -154,7 +154,8 @@ tr.drag-over td{background:rgba(200,240,122,.15) !important;outline:2px dashed v
   {% endif %}
 </div>
 
-<form method="POST" action="{{ url_for('main.saved_roster_override', roster_id=sr.id) }}" id="override-form">
+<form method="POST" action="{{ url_for('main.saved_roster_override', roster_id=sr.id) }}" id="override-form" onsubmit="serializeState(event)">
+<input type="hidden" name="roster_state" id="roster-state-field" value="[]">
 {% if groups %}
 
 <!-- TOP ribbon -->
@@ -225,7 +226,7 @@ tr.drag-over td{background:rgba(200,240,122,.15) !important;outline:2px dashed v
           {% endfor %}
           <td>
             <select class="override-select" name="override_{{ gi }}_{{ si }}"
-                    onchange="this.classList.add('changed'); this.closest('tr').classList.add('row-modified');">
+                    onchange="this.classList.add('changed'); this.closest('tr').classList.add('row-modified'); updateRowPlayer(this);">
               <option value="{{ player.get('Nazwa','') }}">— {{ player.get('Nazwa','') }}</option>
               {% for p in player_pool %}
               {% if p.get('Nazwa','') != player.get('Nazwa','') %}
@@ -265,6 +266,47 @@ tr.drag-over td{background:rgba(200,240,122,.15) !important;outline:2px dashed v
 </div>
 
 <script>
+// Player pool for lookup
+var PLAYER_POOL = {{ player_pool | tojson }};
+
+function getPlayerByName(name) {
+  return PLAYER_POOL.find(p => p['Nazwa'] === name) || null;
+}
+
+function updateRowPlayer(select) {
+  // When dropdown changes, update the row's data-player to reflect chosen player
+  var row = select.closest('tr');
+  var chosen = getPlayerByName(select.value);
+  if (chosen) {
+    row.dataset.player = JSON.stringify(chosen);
+    // Also update the name-cell display
+    var nameCell = row.querySelector('.name-cell');
+    if (nameCell) {
+      nameCell.dataset.name = chosen['Nazwa'] || '';
+      nameCell.innerHTML = (chosen['boosted'] ? '<span style="color:#f0c060;margin-right:4px;">⚡</span>' : '') + (chosen['Nazwa'] || '');
+    }
+  }
+}
+
+function serializeState(e) {
+  // Build groups array from current DOM state, excluding dropped rows
+  var tbodies = document.querySelectorAll('tbody[data-gi]');
+  var groups = [];
+  tbodies.forEach(function(tbody) {
+    var group = [];
+    tbody.querySelectorAll('tr[data-gi]').forEach(function(row) {
+      if (!row.classList.contains('row-dropped')) {
+        try {
+          var player = JSON.parse(row.dataset.player || '{}');
+          group.push(player);
+        } catch(ex) {}
+      }
+    });
+    groups.push(group);
+  });
+  document.getElementById('roster-state-field').value = JSON.stringify(groups);
+}
+
 var MSG_NO_DUP    = "{{ '✓ ' + t.dup_none }}";
 var MSG_DUP_FOUND = "{{ '⚠ ' + t.dup_found_prefix }}";
 var MSG_DUP_BADGE = "DUP";
@@ -366,6 +408,11 @@ function swapRows(rowA, rowB) {
       colsB[i].dataset.name = nA || '';
     }
   }
+  // Swap data-player on the rows (source of truth for serialization)
+  const tmpPlayer = rowA.dataset.player;
+  rowA.dataset.player = rowB.dataset.player;
+  rowB.dataset.player = tmpPlayer;
+
   const selA = colsA[colsA.length - 1].querySelector('select');
   const selB = colsB[colsB.length - 1].querySelector('select');
   if (selA && selB) {

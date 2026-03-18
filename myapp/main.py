@@ -774,26 +774,16 @@ def saved_roster_view(roster_id):
 
     groups      = json.loads(sr.groups_data)
     columns     = json.loads(sr.columns_data)
-    overrides   = json.loads(sr.overrides)
     player_pool = json.loads(sr.player_pool)
     config      = json.loads(sr.config)
     tier_labels = config.get('tier_labels')
 
-    # Apply overrides to groups for display
-    display_groups = []
-    for gi, group in enumerate(groups):
-        display_group = []
-        for si, player in enumerate(group):
-            key = f'{gi}:{si}'
-            display_group.append(overrides.get(key, player))
-        display_groups.append(display_group)
-
-    group_stats = [{'avg_reso': _avg_reso(g), 'count': len(g)}
-                   for g in display_groups]
+    # groups_data already contains the current display state (overrides baked in)
+    group_stats = [{'avg_reso': _avg_reso(g), 'count': len(g)} for g in groups]
 
     return render_template('saved_roster_view.html',
                            sr=sr,
-                           groups=display_groups,
+                           groups=groups,
                            group_stats=group_stats,
                            tier_labels=tier_labels,
                            columns=columns,
@@ -810,27 +800,23 @@ def saved_roster_override(roster_id):
         flash(t()['flash_access_denied'], 'error')
         return redirect(url_for('main.saved_rosters_list'))
 
-    overrides = json.loads(sr.overrides)
-    player_pool = json.loads(sr.player_pool)
+    # The form submits the full current state as JSON via hidden field 'roster_state'
+    roster_state_json = request.form.get('roster_state', '')
+    if roster_state_json:
+        try:
+            # roster_state: list of groups, each group = list of player dicts (already in display order)
+            new_groups = json.loads(roster_state_json)
+            sr.groups_data = json.dumps(new_groups)
+            sr.overrides   = '{}'   # overrides are now baked into groups_data
+            db.session.commit()
+            flash(t()['roster_overrides_saved'], 'success')
+        except Exception as e:
+            import traceback
+            current_app.logger.error(f'override save error: {traceback.format_exc()}')
+            flash(f'Save failed: {e}', 'error')
+    else:
+        flash('No data received.', 'error')
 
-    # Each override field: name="override_GI_SI" value=player_name
-    for key, val in request.form.items():
-        if key.startswith('override_'):
-            parts = key.split('_', 2)
-            if len(parts) == 3:
-                gi, si = parts[1], parts[2]
-                slot_key = f'{gi}:{si}'
-                # Find player in pool by name
-                chosen = next((p for p in player_pool
-                               if p.get('Nazwa', '') == val), None)
-                if chosen:
-                    overrides[slot_key] = chosen
-                elif slot_key in overrides:
-                    del overrides[slot_key]
-
-    sr.overrides = json.dumps(overrides)
-    db.session.commit()
-    flash(t()['roster_overrides_saved'], 'success')
     return redirect(url_for('main.saved_roster_view', roster_id=roster_id))
 
 
