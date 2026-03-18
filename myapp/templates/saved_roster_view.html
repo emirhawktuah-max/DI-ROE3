@@ -3,9 +3,83 @@
 {% block head %}
 <style>
 .battle-badge{display:inline-block;padding:4px 14px;border-radius:99px;font-size:12px;font-weight:500;background:rgba(200,240,122,.15);border:1px solid var(--accent);color:var(--accent);margin-left:12px;vertical-align:middle;}
-.config-pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px;}
+.config-pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;}
 .config-pill{background:var(--surface);border:1px solid var(--border);border-radius:99px;padding:3px 12px;font-size:11px;color:var(--muted);}
 .config-pill strong{color:var(--text);}
+
+/* Action ribbon (shared top + bottom) */
+.action-ribbon{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:12px 0;}
+.drag-hint{font-size:11px;color:var(--muted);margin-left:4px;font-style:italic;}
+
+/* Main layout: roster grid + drop zone side by side */
+.roster-layout{display:grid;grid-template-columns:1fr 200px;gap:16px;align-items:start;}
+@media(max-width:800px){.roster-layout{grid-template-columns:1fr;}}
+
+/* Drop zone */
+.drop-zone{
+  border:2px dashed var(--border);
+  border-radius:var(--radius);
+  background:var(--surface);
+  min-height:400px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:12px 8px;
+  transition:border-color .15s, background .15s;
+  position:sticky;
+  top:76px;
+}
+.drop-zone.drag-active{
+  border-color:var(--danger);
+  background:rgba(240,122,122,.07);
+}
+.drop-zone-label{
+  font-size:11px;
+  color:var(--muted);
+  text-align:center;
+  margin-bottom:12px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.drop-zone-icon{
+  font-size:28px;
+  color:var(--border);
+  margin-bottom:8px;
+}
+.dropped-list{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin-top:8px;
+}
+.dropped-item{
+  background:rgba(240,122,122,.12);
+  border:1px solid var(--danger);
+  border-radius:var(--radius);
+  padding:6px 8px;
+  font-size:11px;
+  color:var(--danger);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:4px;
+  word-break:break-all;
+}
+.dropped-item-restore{
+  cursor:pointer;
+  font-size:14px;
+  color:var(--muted);
+  flex-shrink:0;
+  border:none;
+  background:none;
+  padding:0 2px;
+  line-height:1;
+}
+.dropped-item-restore:hover{color:var(--accent);}
+.drop-zone-empty{font-size:10px;color:var(--muted);text-align:center;opacity:.6;margin-top:8px;}
+
+/* Battle grid */
 .battles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(460px,1fr));gap:16px;}
 @media(max-width:600px){.battles-grid{grid-template-columns:1fr;}}
 .battle-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
@@ -23,6 +97,14 @@
 .battle-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
 .battle-table tr:last-child td{border-bottom:none;}
 .battle-table tbody tr:hover td{background:rgba(255,255,255,.03);}
+.battle-table tr.row-dropped{display:none;}
+.battle-table tr.row-modified td{
+  background: rgba(122,190,240,.06) !important;
+  border-left: 2px solid rgba(122,190,240,.3);
+}
+.battle-table tr.row-modified td:first-child{
+  border-left: 2px solid rgba(122,190,240,.5);
+}
 .class-badge{display:inline-block;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:500;white-space:nowrap;}
 .cls-Nekromanta{background:#1a1a2e;color:#a0a0f0;border:1px solid #2a2a4e;}
 .cls-Barbarzyńca{background:#2e1a0f;color:#f0a060;border:1px solid #4e2a0f;}
@@ -36,27 +118,23 @@
 .cls-default{background:#1a1a1a;color:var(--muted);border:1px solid var(--border);}
 .rank-outside{color:var(--muted);font-size:10px;font-style:italic;}
 
-/* Override dropdown */
 .override-select{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:3px 6px;border-radius:var(--radius);outline:none;width:100%;transition:border-color .15s;}
 .override-select:focus{border-color:var(--accent);}
 .override-select.changed{border-color:var(--accent2);}
 
-/* Duplicate highlight */
 .dup-row td{background:rgba(240,80,80,.15) !important;}
 .dup-row td:first-child{border-left:3px solid #f07a7a;}
 .dup-name{color:#f07a7a !important;font-weight:700 !important;}
-.dup-badge{display:inline-block;background:#f07a7a;color:#0f0f0f;font-size:9px;font-weight:700;padding:1px 5px;border-radius:99px;margin-left:5px;vertical-align:middle;text-transform:uppercase;letter-spacing:.05em;}
-#dup-banner{display:none;padding:12px 16px;background:#2e0f0f;border:1px solid #f07a7a;border-radius:var(--radius);color:#f07a7a;font-size:13px;margin-bottom:20px;}
+.dup-badge{display:inline-block;background:#f07a7a;color:#0f0f0f;font-size:9px;font-weight:700;padding:1px 5px;border-radius:99px;margin-left:5px;vertical-align:middle;text-transform:uppercase;}
+#dup-banner{display:none;padding:12px 16px;background:#2e0f0f;border:1px solid #f07a7a;border-radius:var(--radius);color:#f07a7a;font-size:13px;margin-bottom:12px;}
 #dup-banner.visible{display:block;}
-#no-dup-banner{display:none;padding:12px 16px;background:#1a2e0f;border:1px solid #3a5c1a;border-radius:var(--radius);color:var(--accent);font-size:13px;margin-bottom:20px;}
+#no-dup-banner{display:none;padding:12px 16px;background:#1a2e0f;border:1px solid #3a5c1a;border-radius:var(--radius);color:var(--accent);font-size:13px;margin-bottom:12px;}
 #no-dup-banner.visible{display:block;}
 
-/* Drag and drop */
-.drag-handle{cursor:grab;color:var(--muted);font-size:14px;padding:0 6px 0 0;user-select:none;flex-shrink:0;}
-.drag-handle:active{cursor:grabbing;}
 tr.dragging{opacity:.4;}
 tr.drag-over td{background:rgba(200,240,122,.15) !important;outline:2px dashed var(--accent);}
-.drag-hint{font-size:11px;color:var(--muted);margin-left:8px;font-style:italic;}
+.drag-handle{cursor:grab;color:var(--muted);font-size:14px;padding:0 6px 0 0;user-select:none;}
+.drag-handle:active{cursor:grabbing;}
 </style>
 {% endblock %}
 
@@ -78,76 +156,11 @@ tr.drag-over td{background:rgba(200,240,122,.15) !important;outline:2px dashed v
 
 <form method="POST" action="{{ url_for('main.saved_roster_override', roster_id=sr.id) }}" id="override-form">
 {% if groups %}
-<div class="battles-grid">
-  {% for group in groups %}
-  {% set stat = group_stats[loop.index0] %}
-  {% set gi = loop.index0 %}
-  {% set tier = tier_labels[gi] if tier_labels else None %}
-  <div class="battle-card">
-    <div class="battle-card-header">
-      <span class="battle-num">
-        {{ t.roster_battle_label }} {{ loop.index }}
-        {% if tier %}<span class="tier-label tier-{{ tier }}">{{ tier }}</span>{% endif %}
-      </span>
-      <div class="battle-stats">
-        <strong>{{ stat.count }}</strong> {{ t.preview_subtitle_rows }}<br>
-        ø reso <strong>{{ stat.avg_reso }}</strong>
-      </div>
-    </div>
-    <table class="battle-table">
-      <thead>
-        <tr>
-          <th style="width:28px;"></th>
-          <th>#</th>
-          {% for col in columns %}<th>{{ col }}</th>{% endfor %}
-          <th style="color:var(--accent);font-size:10px;">{{ t.roster_override_col }}</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-{{ gi }}" data-gi="{{ gi }}">
-      {% for player in group %}
-      {% set si = loop.index0 %}
-      <tr draggable="true"
-          data-gi="{{ gi }}"
-          data-si="{{ si }}"
-          data-player='{{ player | tojson | e }}'>
-        <td style="padding:4px 6px;"><span class="drag-handle" title="Drag to swap">⠿</span></td>
-        <td style="color:var(--muted);font-size:10px;">{{ loop.index }}</td>
-        {% for col in columns %}
-          {% set val = player.get(col, '') %}
-          {% if col == 'Nazwa' %}
-            <td class="name-cell" data-name="{{ val }}" style="font-weight:500;font-size:12px;">
-              {% if player.get('boosted') %}<span title="PowerPlayer +20%" style="color:#f0c060;margin-right:4px;font-size:13px;">⚡</span>{% endif %}{{ val }}</td>
-          {% elif col == 'Klasa' %}
-            <td><span class="class-badge cls-{{ val|replace(' ','_') if val else 'default' }}">{{ val }}</span></td>
-          {% elif col == 'Ranking udziału' %}
-            <td>{% if val=='Poza rankingiem' or val=='' %}<span class="rank-outside">{{ val if val else '—' }}</span>{% else %}{{ val }}{% endif %}</td>
-          {% else %}<td>{{ val }}</td>{% endif %}
-        {% endfor %}
-        <td>
-          <select class="override-select" name="override_{{ gi }}_{{ si }}"
-                  onchange="this.classList.add('changed')">
-            <option value="{{ player.get('Nazwa','') }}">— {{ player.get('Nazwa','') }}</option>
-            {% for p in player_pool %}
-            {% if p.get('Nazwa','') != player.get('Nazwa','') %}
-            <option value="{{ p.get('Nazwa','') }}">{{ p.get('Nazwa','') }} ({{ p.get('Rezonowanie','') }})</option>
-            {% endif %}
-            {% endfor %}
-          </select>
-        </td>
-      </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% endfor %}
-</div>
 
-<div id="dup-banner"></div>
-<div id="no-dup-banner">{{ "✓ " + t.dup_none }}</div>
-
-<div style="margin-top:28px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+<!-- TOP ribbon -->
+<div class="action-ribbon" style="margin-bottom:16px;">
   <button type="submit" class="btn btn-primary">{{ t.roster_save_overrides }} ✓</button>
-  <button type="button" class="btn btn-ghost" onclick="checkDuplicates()">⚠ Check Duplicates</button>
+  <button type="button" class="btn btn-ghost" onclick="checkDuplicates()">⚠ {{ t.dup_check_btn }}</button>
   <a href="{{ url_for('main.saved_rosters_list') }}" class="btn btn-ghost">← {{ t.saved_rosters_title }}</a>
   <a href="{{ url_for('main.saved_roster_export', roster_id=sr.id) }}" class="btn btn-ghost">{{ t.roster_export_btn }} ↓</a>
   <form method="POST" action="{{ url_for('main.saved_roster_delete', roster_id=sr.id) }}"
@@ -157,10 +170,156 @@ tr.drag-over td{background:rgba(200,240,122,.15) !important;outline:2px dashed v
   <span class="drag-hint">{{ t.drag_hint }}</span>
 </div>
 
+<div id="dup-banner"></div>
+<div id="no-dup-banner">{{ "✓ " + t.dup_none }}</div>
+
+<!-- Main layout -->
+<div class="roster-layout">
+
+  <!-- Left: battles grid -->
+  <div class="battles-grid">
+    {% for group in groups %}
+    {% set stat = group_stats[loop.index0] %}
+    {% set gi = loop.index0 %}
+    {% set tier = tier_labels[gi] if tier_labels else None %}
+    <div class="battle-card">
+      <div class="battle-card-header">
+        <span class="battle-num">
+          {{ t.roster_battle_label }} {{ loop.index }}
+          {% if tier %}<span class="tier-label tier-{{ tier }}">{{ tier }}</span>{% endif %}
+        </span>
+        <div class="battle-stats">
+          <strong>{{ stat.count }}</strong> {{ t.preview_subtitle_rows }}<br>
+          ø reso <strong>{{ stat.avg_reso }}</strong>
+        </div>
+      </div>
+      <table class="battle-table">
+        <thead>
+          <tr>
+            <th style="width:28px;"></th>
+            <th>#</th>
+            {% for col in columns %}<th>{{ col }}</th>{% endfor %}
+            <th style="color:var(--accent);font-size:10px;">{{ t.roster_override_col }}</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-{{ gi }}" data-gi="{{ gi }}">
+        {% for player in group %}
+        {% set si = loop.index0 %}
+        <tr draggable="true"
+            data-gi="{{ gi }}"
+            data-si="{{ si }}"
+            data-name="{{ player.get('Nazwa','') }}"
+            data-player='{{ player | tojson | e }}'>
+          <td style="padding:4px 6px;"><span class="drag-handle" title="{{ t.drag_hint }}">⠿</span></td>
+          <td style="color:var(--muted);font-size:10px;">{{ loop.index }}</td>
+          {% for col in columns %}
+            {% set val = player.get(col, '') %}
+            {% if col == 'Nazwa' %}
+              <td class="name-cell" data-name="{{ val }}" style="font-weight:500;font-size:12px;">
+                {% if player.get('boosted') %}<span title="PowerPlayer +20%" style="color:#f0c060;margin-right:4px;font-size:13px;">⚡</span>{% endif %}{{ val }}</td>
+            {% elif col == 'Klasa' %}
+              <td><span class="class-badge cls-{{ val|replace(' ','_') if val else 'default' }}">{{ val }}</span></td>
+            {% elif col == 'Ranking udziału' %}
+              <td>{% if val=='Poza rankingiem' or val=='' %}<span class="rank-outside">{{ val if val else '—' }}</span>{% else %}{{ val }}{% endif %}</td>
+            {% else %}<td>{{ val }}</td>{% endif %}
+          {% endfor %}
+          <td>
+            <select class="override-select" name="override_{{ gi }}_{{ si }}"
+                    onchange="this.classList.add('changed'); this.closest('tr').classList.add('row-modified');">
+              <option value="{{ player.get('Nazwa','') }}">— {{ player.get('Nazwa','') }}</option>
+              {% for p in player_pool %}
+              {% if p.get('Nazwa','') != player.get('Nazwa','') %}
+              <option value="{{ p.get('Nazwa','') }}">{{ p.get('Nazwa','') }} ({{ p.get('Rezonowanie','') }})</option>
+              {% endif %}
+              {% endfor %}
+            </select>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Right: drop zone -->
+  <div class="drop-zone" id="drop-zone">
+    <div class="drop-zone-icon">🗑</div>
+    <div class="drop-zone-label">{{ t.drop_zone_label }}</div>
+    <div class="drop-zone-empty" id="drop-zone-empty">{{ t.drop_zone_empty }}</div>
+    <div class="dropped-list" id="dropped-list"></div>
+  </div>
+
+</div>
+
+<!-- BOTTOM ribbon -->
+<div class="action-ribbon" style="margin-top:28px;">
+  <button type="submit" class="btn btn-primary">{{ t.roster_save_overrides }} ✓</button>
+  <button type="button" class="btn btn-ghost" onclick="checkDuplicates()">⚠ {{ t.dup_check_btn }}</button>
+  <a href="{{ url_for('main.saved_rosters_list') }}" class="btn btn-ghost">← {{ t.saved_rosters_title }}</a>
+  <a href="{{ url_for('main.saved_roster_export', roster_id=sr.id) }}" class="btn btn-ghost">{{ t.roster_export_btn }} ↓</a>
+  <form method="POST" action="{{ url_for('main.saved_roster_delete', roster_id=sr.id) }}"
+        onsubmit="return confirm('{{ t.manage_btn_delete }} {{ sr.name }}?')" style="margin:0;">
+    <button type="submit" class="btn btn-danger">{{ t.manage_btn_delete }}</button>
+  </form>
+</div>
+
 <script>
 var MSG_NO_DUP    = "{{ '✓ ' + t.dup_none }}";
 var MSG_DUP_FOUND = "{{ '⚠ ' + t.dup_found_prefix }}";
 var MSG_DUP_BADGE = "DUP";
+var MSG_RESTORE   = "{{ t.drop_zone_restore }}";
+var droppedRows   = {};   // rowKey -> { row, name }
+
+// ─── Drop Zone ──────────────────────────────────────────────────────
+var dropZone = document.getElementById('drop-zone');
+
+dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropZone.classList.add('drag-active');
+});
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('drag-active');
+});
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-active');
+  if (!dragSrc) return;
+  removeRow(dragSrc);
+  dragSrc = null;
+});
+
+function removeRow(row) {
+  const name  = row.dataset.name || row.querySelector('.name-cell')?.dataset.name || '?';
+  const key   = row.dataset.gi + ':' + row.dataset.si;
+  row.classList.add('row-dropped');
+  droppedRows[key] = { row, name };
+  updateDroppedList();
+}
+
+function restoreRow(key) {
+  if (!droppedRows[key]) return;
+  droppedRows[key].row.classList.remove('row-dropped');
+  droppedRows[key].row.classList.add('row-modified');
+  delete droppedRows[key];
+  updateDroppedList();
+}
+
+function updateDroppedList() {
+  const list  = document.getElementById('dropped-list');
+  const empty = document.getElementById('drop-zone-empty');
+  list.innerHTML = '';
+  const keys = Object.keys(droppedRows);
+  empty.style.display = keys.length ? 'none' : 'block';
+  keys.forEach(key => {
+    const item = document.createElement('div');
+    item.className = 'dropped-item';
+    item.innerHTML = '<span>' + droppedRows[key].name + '</span>' +
+      '<button type="button" class="dropped-item-restore" title="' + MSG_RESTORE + '" onclick="restoreRow(\'' + key + '\')">↩</button>';
+    list.appendChild(item);
+  });
+}
+
 // ─── Drag & Drop swap ────────────────────────────────────────────────
 let dragSrc = null;
 
@@ -173,11 +332,13 @@ document.querySelectorAll('tr[draggable]').forEach(row => {
   row.addEventListener('dragend', () => {
     row.classList.remove('dragging');
     document.querySelectorAll('.drag-over').forEach(r => r.classList.remove('drag-over'));
+    dragSrc = null;
   });
   row.addEventListener('dragover', e => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    if (row !== dragSrc) row.classList.add('drag-over');
+    if (row !== dragSrc && !row.classList.contains('row-dropped'))
+      row.classList.add('drag-over');
   });
   row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
   row.addEventListener('drop', e => {
@@ -185,23 +346,19 @@ document.querySelectorAll('tr[draggable]').forEach(row => {
     row.classList.remove('drag-over');
     if (!dragSrc || dragSrc === row) return;
     swapRows(dragSrc, row);
+    dragSrc = null;
   });
 });
 
 function swapRows(rowA, rowB) {
-  // Swap the visible cell content (all tds except handle, index, and select)
   const colsA = [...rowA.querySelectorAll('td')];
   const colsB = [...rowB.querySelectorAll('td')];
-
-  // td[0]=handle, td[1]=index, td[2..n-1]=data cols, td[n]=select
-  const dataCount = colsA.length - 3; // exclude handle, index, select
+  const dataCount = colsA.length - 3;
 
   for (let i = 2; i < 2 + dataCount; i++) {
     const tmpHTML = colsA[i].innerHTML;
-    const tmpName = colsA[i].dataset ? colsA[i].dataset.name : undefined;
     colsA[i].innerHTML = colsB[i].innerHTML;
     colsB[i].innerHTML = tmpHTML;
-    // swap data-name on name-cell
     if (colsA[i].classList.contains('name-cell') || colsB[i].classList.contains('name-cell')) {
       const nA = colsA[i].dataset.name;
       const nB = colsB[i].dataset.name;
@@ -209,27 +366,17 @@ function swapRows(rowA, rowB) {
       colsB[i].dataset.name = nA || '';
     }
   }
-
-  // Swap the override select values
   const selA = colsA[colsA.length - 1].querySelector('select');
   const selB = colsB[colsB.length - 1].querySelector('select');
   if (selA && selB) {
-    const tmpVal = selA.value;
-    const tmpOpts = selA.innerHTML;
-    // We want to swap the current selected value shown
-    // Find matching options in each
-    const valA = selA.value;
-    const valB = selB.value;
-    // Try to select B's value in A's select and vice versa
+    const valA = selA.value, valB = selB.value;
     setSelectValue(selA, valB);
     setSelectValue(selB, valA);
     selA.classList.add('changed');
     selB.classList.add('changed');
   }
-
-  // Flash highlight to confirm swap
   [rowA, rowB].forEach(r => {
-    r.style.transition = 'background .1s';
+    r.classList.add('row-modified');
     r.querySelectorAll('td').forEach(td => {
       td.style.background = 'rgba(200,240,122,.2)';
       setTimeout(() => td.style.background = '', 400);
@@ -238,19 +385,20 @@ function swapRows(rowA, rowB) {
 }
 
 function setSelectValue(sel, val) {
-  // Try to select the option with given value; if not found, keep current
   for (let opt of sel.options) {
     if (opt.value === val) { sel.value = val; return; }
   }
 }
 
-// ─── Duplicate check ─────────────────────────────────────────────────
+// ─── Duplicate check ────────────────────────────────────────────────
 function checkDuplicates() {
   document.querySelectorAll('.dup-row').forEach(r => r.classList.remove('dup-row'));
   document.querySelectorAll('.dup-badge').forEach(b => b.remove());
   document.querySelectorAll('.name-cell').forEach(c => c.classList.remove('dup-name'));
 
-  const cells = document.querySelectorAll('.name-cell');
+  // Only count visible (non-dropped) rows
+  const cells = [...document.querySelectorAll('.name-cell')]
+    .filter(c => !c.closest('tr').classList.contains('row-dropped'));
   const counts = {};
   cells.forEach(c => {
     const name = c.dataset.name.trim();
@@ -258,7 +406,7 @@ function checkDuplicates() {
   });
 
   const dups = Object.entries(counts).filter(([n, c]) => c > 1);
-  const banner = document.getElementById('dup-banner');
+  const banner   = document.getElementById('dup-banner');
   const noBanner = document.getElementById('no-dup-banner');
 
   if (dups.length === 0) {

@@ -147,6 +147,22 @@
 </div>
 
 <form method="POST" action="{{ url_for('main.save_attendance', upload_id=upload.id) }}" id="attendance-form">
+
+  <!-- TOP ribbon -->
+  <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; padding:12px 0; margin-bottom:8px;">
+    <div style="display:flex; gap:24px;">
+      <div class="attendance-counter">
+        <strong id="confirmed-count-top">{{ confirmed_count }}</strong>
+        {{ t.attendance_of }} {{ rows|length }} {{ t.attendance_count }}
+      </div>
+      <div class="power-counter">
+        <strong id="power-count-top">{{ power_count }}</strong>
+        {{ t.power_player_short }}
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary">{{ t.attendance_save }} ✓</button>
+  </div>
+
   <div class="card" style="padding:0; overflow:hidden;">
     <div class="roster-wrap">
       <table class="roster-table">
@@ -253,6 +269,8 @@ function updateCounts() {
   const power     = document.querySelectorAll('input[id^="power-"]:checked').length;
   document.getElementById('confirmed-count').textContent = confirmed;
   document.getElementById('power-count').textContent     = power;
+  document.getElementById('confirmed-count-top').textContent = confirmed;
+  document.getElementById('power-count-top').textContent     = power;
 }
 </script>
 {% endblock %}
