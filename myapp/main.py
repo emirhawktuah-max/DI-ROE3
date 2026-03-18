@@ -636,11 +636,16 @@ def roster_view():
     group_stats = [{'avg_reso': _avg_reso(g), 'count': len(g)} for g in groups]
 
     # Strip internal _ keys from groups and pool before passing to template
-    # Rename _boosted -> boosted so it survives the underscore-strip
+    # Rename _boosted -> boosted, _source -> source_file so they survive the underscore-strip
     for g in groups:
         for p in g:
             if p.get('_boosted'):
                 p['boosted'] = True
+            if p.get('_source'):
+                p['source_file'] = p['_source']
+    for p in all_players:
+        if p.get('_source'):
+            p['source_file'] = p['_source']
 
     def _clean(p):
         return {k: v for k, v in p.items() if not k.startswith('_')}
@@ -672,6 +677,8 @@ def roster_view():
         'Max power': tr['opt_max_power'],
         'Even distribution': tr['opt_even_dist'],
     }
+    source_color_map = {sf: i for i, sf in enumerate(source_files)}
+
     return render_template('roster_view.html',
                            groups=clean_groups,
                            group_stats=group_stats,
@@ -688,7 +695,8 @@ def roster_view():
                            total_players=len(pool),
                            full_pool=full_pool_clean,
                            power_player=power_player,
-                           opt_labels=opt_labels)
+                           opt_labels=opt_labels,
+                           source_color_map=source_color_map)
 
 
 @main_bp.route('/roster/save', methods=['POST'])
@@ -781,6 +789,12 @@ def saved_roster_view(roster_id):
     # groups_data already contains the current display state (overrides baked in)
     group_stats = [{'avg_reso': _avg_reso(g), 'count': len(g)} for g in groups]
 
+    sf = config.get('source_files', [])
+    if isinstance(sf, str):
+        try: sf = json.loads(sf)
+        except: sf = []
+    source_color_map = {f: i for i, f in enumerate(sf)}
+
     return render_template('saved_roster_view.html',
                            sr=sr,
                            groups=groups,
@@ -788,7 +802,8 @@ def saved_roster_view(roster_id):
                            tier_labels=tier_labels,
                            columns=columns,
                            config=config,
-                           player_pool=player_pool)
+                           player_pool=player_pool,
+                           source_color_map=source_color_map)
 
 
 @main_bp.route('/saved-rosters/<int:roster_id>/override', methods=['POST'])
@@ -1081,3 +1096,156 @@ def saved_roster_export(roster_id):
         current_app.logger.error(f'Export error: {traceback.format_exc()}')
         flash(f'Export failed: {e}', 'error')
         return redirect(url_for('main.saved_roster_view', roster_id=roster_id))
+
+
+# ---------------------------------------------------------------------------
+# Manual Roster Composer
+# ---------------------------------------------------------------------------
+
+MANUAL_TIER_LABELS = ['8', '8', '8', '4', '4', '4', '2', '2', '2', '1', '1', '1']
+MANUAL_TIER_NAMES  = {'8': 'manual_tier_8', '4': 'manual_tier_4',
+                      '2': 'manual_tier_2', '1': 'manual_tier_1'}
+
+
+@main_bp.route('/manual-roster', methods=['GET', 'POST'])
+@login_required
+def manual_roster_select():
+    tr = t()
+    if current_user.is_admin():
+        all_uploads = Upload.query.order_by(Upload.uploaded_at.desc()).all()
+    else:
+        all_uploads = Upload.query.filter(
+            (Upload.user_id == current_user.id) | (Upload.is_shared == True)
+        ).order_by(Upload.uploaded_at.desc()).all()
+
+    if request.method == 'POST':
+        selected = request.form.getlist('upload_ids')
+        if not selected:
+            flash(tr['manual_error_no_files'], 'error')
+            return redirect(request.url)
+        if len(selected) > 3:
+            flash(tr['manual_error_too_many'], 'error')
+            return redirect(request.url)
+        ids_str = ','.join(selected[:3])
+        return redirect(url_for('main.manual_roster_compose', ids=ids_str))
+
+    return render_template('manual_roster_select.html', uploads=all_uploads)
+
+
+@main_bp.route('/manual-roster/compose')
+@login_required
+def manual_roster_compose():
+    tr = t()
+    ids_str = request.args.get('ids', '')
+    try:
+        upload_ids = [int(i) for i in ids_str.split(',') if i.strip()]
+    except ValueError:
+        flash(tr['manual_error_no_files'], 'error')
+        return redirect(url_for('main.manual_roster_select'))
+
+    all_players = []
+    columns_used = None
+    source_files = []
+
+    for uid in upload_ids:
+        upload_rec = _get_accessible_upload(uid)
+        if not upload_rec:
+            continue
+        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], upload_rec.filename)
+        try:
+            df = parse_txt_to_df(filepath)
+        except Exception:
+            continue
+
+        attendance = Attendance.query.filter_by(upload_id=uid).first()
+        confirmed_map = json.loads(attendance.confirmed_rows) if attendance else {}
+        power_map     = json.loads(attendance.power_rows if attendance and attendance.power_rows else '{}')
+
+        cols = list(df.columns)
+        if columns_used is None:
+            columns_used = cols[1:-1]  # strip first and last
+
+        rows = df.fillna('').to_dict(orient='records')
+        for i, row in enumerate(rows):
+            row['_confirmed'] = confirmed_map.get(str(i), False)
+            row['_power']     = power_map.get(str(i), False)
+            all_players.append(row)
+        source_files.append(upload_rec.original_filename)
+
+    # Deduplicate by name, keep highest reso
+    seen = {}
+    for p in sorted(all_players, key=_reso, reverse=True):
+        name = p.get('Nazwa', '')
+        if name and name not in seen:
+            seen[name] = p
+    pool = list(seen.values())
+
+    # Clean internal keys for template, preserving useful ones
+    clean_pool = []
+    for p in pool:
+        pc = {k: v for k, v in p.items() if not k.startswith('_')}
+        pc['confirmed']   = p.get('_confirmed', False)
+        pc['power']       = p.get('_power', False)
+        pc['source_file'] = p.get('_source', '')
+        clean_pool.append(pc)
+
+    config = {
+        'battle_type':   'Manual',
+        'source_files':  source_files,
+        'tier_labels':   MANUAL_TIER_LABELS,
+        'num_battles':   12,
+    }
+
+    source_color_map = {sf: i for i, sf in enumerate(source_files)}
+
+    return render_template('manual_roster_compose.html',
+                           pool=clean_pool,
+                           columns=columns_used or [],
+                           source_files=source_files,
+                           source_color_map=source_color_map,
+                           ids_str=ids_str,
+                           tier_labels=MANUAL_TIER_LABELS,
+                           tier_names=MANUAL_TIER_NAMES,
+                           config_json=json.dumps(config))
+
+
+@main_bp.route('/manual-roster/save', methods=['POST'])
+@login_required
+def manual_roster_save():
+    from models import SavedRoster
+    import traceback
+    tr = t()
+
+    roster_state_json = request.form.get('roster_state', '')
+    columns_json      = request.form.get('columns_data', '[]')
+    pool_json         = request.form.get('player_pool', '[]')
+    config_json       = request.form.get('config_data', '{}')
+    roster_name       = request.form.get('roster_name', '').strip()
+
+    if not roster_state_json:
+        flash('No roster data received.', 'error')
+        return redirect(url_for('main.manual_roster_select'))
+
+    try:
+        groups = json.loads(roster_state_json)
+        today  = date.today().strftime('%Y-%m-%d')
+        name   = roster_name if roster_name else f"{current_user.username}_manual_{today}"
+
+        sr = SavedRoster(
+            name=name,
+            created_by=current_user.id,
+            battle_type='Manual',
+            config=config_json,
+            groups_data=json.dumps(groups),
+            columns_data=columns_json,
+            player_pool=pool_json,
+            overrides='{}',
+        )
+        db.session.add(sr)
+        db.session.commit()
+        flash(f'{tr["manual_saved"]} "{name}"', 'success')
+        return redirect(url_for('main.saved_roster_view', roster_id=sr.id))
+    except Exception as e:
+        current_app.logger.error(f'manual_roster_save error: {traceback.format_exc()}')
+        flash(f'Save failed: {e}', 'error')
+        return redirect(url_for('main.manual_roster_select'))

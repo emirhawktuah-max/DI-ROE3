@@ -35,6 +35,13 @@
 .cls-Druid{background:#1a2e20;color:#60d090;border:1px solid #2a4e38;}
 .cls-default{background:#1a1a1a;color:var(--muted);border:1px solid var(--border);}
 .rank-outside{color:var(--muted);font-size:10px;font-style:italic;}
+/* Source file colour coding */
+tr[data-src="0"] td:first-child { border-left: 3px solid rgba(240,100,100,.5); }
+tr[data-src="0"] td { background: rgba(240,100,100,.04); }
+tr[data-src="1"] td:first-child { border-left: 3px solid rgba(100,150,240,.5); }
+tr[data-src="1"] td { background: rgba(100,150,240,.04); }
+tr[data-src="2"] td:first-child { border-left: 3px solid rgba(100,210,130,.5); }
+tr[data-src="2"] td { background: rgba(100,210,130,.04); }
 .online-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:4px;vertical-align:middle;}
 </style>
 {% endblock %}
@@ -53,6 +60,17 @@
 </div>
 
 {% if groups %}
+{% if source_files | length > 1 %}
+<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+  {% set src_colors = ['rgba(240,100,100,.7)','rgba(100,150,240,.7)','rgba(100,210,130,.7)'] %}
+  {% for sf in source_files %}
+  <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
+    <span style="width:10px;height:10px;border-radius:2px;background:{{ src_colors[loop.index0] }};flex-shrink:0;"></span>
+    {{ sf }}
+  </span>
+  {% endfor %}
+</div>
+{% endif %}
 <div class="battles-grid">
   {% for group in groups %}
   {% set stat = group_stats[loop.index0] %}
@@ -73,7 +91,7 @@
       <thead><tr><th>#</th>{% for col in columns %}<th>{{ col }}</th>{% endfor %}</tr></thead>
       <tbody>
       {% for player in group %}
-      <tr>
+      <tr data-src="{{ source_color_map.get(player.get('source_file',''), '') if source_color_map|length > 1 else '' }}">
         <td style="color:var(--muted);font-size:10px;">{{ loop.index }}</td>
         {% for col in columns %}
           {% set val = player[col] %}

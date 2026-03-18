@@ -1,0 +1,501 @@
+{% extends "base.html" %}
+{% block title %}{{ t.manual_select_title }} — DataFlow{% endblock %}
+{% block head %}
+<style>
+/* Layout */
+.composer-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media(max-width: 900px) { .composer-layout { grid-template-columns: 1fr; } }
+
+/* Ribbon */
+.ribbon {
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+  padding: 10px 0; margin-bottom: 12px;
+}
+
+/* Player pool */
+.pool-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  position: sticky;
+  top: 76px;
+  max-height: calc(100vh - 100px);
+  display: flex;
+  flex-direction: column;
+}
+.pool-header {
+  padding: 12px 14px;
+  background: #1e1e1e;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.pool-hint {
+  font-size: 10px;
+  color: var(--muted);
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--border);
+  font-style: italic;
+  flex-shrink: 0;
+}
+.pool-search {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.pool-search input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: var(--radius);
+  outline: none;
+}
+.pool-search input:focus { border-color: var(--accent); }
+#pool-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 6px;
+  min-height: 120px;
+}
+
+/* Player items */
+.player-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 4px;
+  cursor: grab;
+  font-size: 12px;
+  border: 1px solid transparent;
+  transition: background .1s, border-color .1s;
+  margin-bottom: 3px;
+  background: var(--bg);
+}
+.player-item:active { cursor: grabbing; }
+.player-item:hover { background: rgba(200,240,122,.06); border-color: var(--border); }
+.player-item.dragging-item { opacity: .4; }
+.player-name { font-weight: 500; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player-reso { font-size: 10px; color: var(--muted); flex-shrink: 0; }
+.player-class-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+
+/* Battle grid */
+.battles-area { }
+.battles-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 10px;
+}
+@media(max-width:1100px) { .battles-grid { grid-template-columns: repeat(2,1fr); } }
+
+.battle-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  min-height: 140px;
+}
+.battle-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; background: #1e1e1e;
+  border-bottom: 1px solid var(--border);
+}
+.battle-num {
+  font-family: var(--serif); font-size: 15px; font-weight: 300; color: var(--accent);
+}
+.battle-meta { font-size: 10px; color: var(--muted); text-align: right; }
+.tier-label {
+  display: inline-block; padding: 1px 7px; border-radius: 99px;
+  font-size: 10px; font-weight: 600; margin-left:6px;
+}
+.tier-8 { background:#2e1a0f; color:#f0a060; border:1px solid #4e2a0f; }
+.tier-4 { background:#1a2e1a; color:#70c070; border:1px solid #2a4e2a; }
+.tier-2 { background:#0f1e2e; color:#60a0f0; border:1px solid #1a3a5c; }
+.tier-1 { background:#2e0f0f; color:#f07070; border:1px solid #5c1a1a; }
+
+.battle-drop-zone {
+  min-height: 80px;
+  padding: 4px;
+  transition: background .15s;
+}
+.battle-drop-zone.drop-active {
+  background: rgba(200,240,122,.08);
+  outline: 2px dashed var(--accent);
+}
+
+.battle-player {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 8px; margin: 2px 0;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px; font-size: 11px; cursor: grab;
+  transition: background .1s;
+}
+.battle-player:hover { background: rgba(200,240,122,.06); }
+.battle-player:active { cursor: grabbing; }
+.battle-player.dragging-item { opacity: .4; }
+.bp-name { font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bp-reso { font-size: 10px; color: var(--muted); flex-shrink: 0; }
+
+.battle-empty {
+  font-size: 10px; color: var(--muted); text-align: center;
+  padding: 16px 8px; font-style: italic;
+}
+
+/* Dup highlight */
+.battle-player.dup { border-color: #f07a7a; background: rgba(240,120,120,.12); }
+.battle-player.dup .bp-name { color: #f07a7a; font-weight: 700; }
+
+/* class colours */
+.cls-dot-Nekromanta    { background: #a0a0f0; }
+.cls-dot-Barbarzyńca   { background: #f0a060; }
+.cls-dot-Łowca_demonów { background: #70c070; }
+.cls-dot-Rycerz_krwi   { background: #f07070; }
+.cls-dot-Czarownik     { background: #c070e0; }
+.cls-dot-Mnich         { background: #60c0d0; }
+.cls-dot-Krzyżowiec    { background: #e0d060; }
+.cls-dot-Sztormiciel   { background: #60a0f0; }
+.cls-dot-Druid         { background: #60d090; }
+.cls-dot-default       { background: var(--muted); }
+
+
+/* Source file colour coding */
+.player-item[data-src="0"]{border-left:3px solid rgba(240,100,100,.5)!important;background:rgba(240,100,100,.06)!important;}
+.player-item[data-src="1"]{border-left:3px solid rgba(100,150,240,.5)!important;background:rgba(100,150,240,.06)!important;}
+.player-item[data-src="2"]{border-left:3px solid rgba(100,210,130,.5)!important;background:rgba(100,210,130,.06)!important;}
+.battle-player[data-src="0"]{border-left:3px solid rgba(240,100,100,.5)!important;background:rgba(240,100,100,.08)!important;}
+.battle-player[data-src="1"]{border-left:3px solid rgba(100,150,240,.5)!important;background:rgba(100,150,240,.08)!important;}
+.battle-player[data-src="2"]{border-left:3px solid rgba(100,210,130,.5)!important;background:rgba(100,210,130,.08)!important;}
+/* Pool also drop target */
+#pool-list.drop-active {
+  background: rgba(200,240,122,.06);
+  outline: 2px dashed var(--accent);
+  border-radius: var(--radius);
+}
+
+/* Dup banner */
+#dup-banner { display:none; padding:10px 14px; background:#2e0f0f; border:1px solid #f07a7a; border-radius:var(--radius); color:#f07a7a; font-size:12px; margin-bottom:10px; }
+#dup-banner.visible { display:block; }
+#no-dup-banner { display:none; padding:10px 14px; background:#1a2e0f; border:1px solid #3a5c1a; border-radius:var(--radius); color:var(--accent); font-size:12px; margin-bottom:10px; }
+#no-dup-banner.visible { display:block; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-title">{{ t.manual_select_title }}</div>
+<div class="page-subtitle">{{ source_files | join(', ') }}</div>
+
+<form method="POST" action="{{ url_for('main.manual_roster_save') }}" id="composer-form" onsubmit="serializeComposer()">
+  <input type="hidden" name="roster_state"  id="roster-state-field"  value="[]">
+  <input type="hidden" name="columns_data"  id="columns-field"       value="{{ columns | tojson | e }}">
+  <input type="hidden" name="player_pool"   id="pool-field"          value="{{ pool | tojson | e }}">
+  <input type="hidden" name="config_data"   id="config-field"        value="{{ config_json | e }}">
+
+  <!-- TOP ribbon -->
+  <div class="ribbon">
+    <input type="text" name="roster_name" placeholder="{{ t.manual_select_title }}" style="max-width:200px; padding:8px 12px; font-size:13px;" />
+    <button type="submit" class="btn btn-primary">{{ t.manual_save }}</button>
+    <button type="button" class="btn btn-ghost" onclick="checkDups()">⚠ {{ t.manual_check_dup }}</button>
+    <a href="{{ url_for('main.manual_roster_select') }}" class="btn btn-ghost">← {{ t.upload_cancel }}</a>
+  </div>
+
+  <div id="dup-banner"></div>
+  <div id="no-dup-banner"></div>
+
+  {% if source_files | length > 1 %}
+<div style="display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
+  {% set src_colors = ['rgba(240,100,100,.7)','rgba(100,150,240,.7)','rgba(100,210,130,.7)'] %}
+  {% for sf in source_files %}
+  <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
+    <span style="width:10px;height:10px;border-radius:2px;background:{{ src_colors[loop.index0] }};flex-shrink:0;"></span>
+    {{ sf }}
+  </span>
+  {% endfor %}
+</div>
+{% endif %}
+<div class="composer-layout">
+
+    <!-- LEFT: player pool -->
+    <div class="pool-panel">
+      <div class="pool-header">{{ t.manual_player_pool }} ({{ pool | length }})</div>
+      <div class="pool-hint">{{ t.manual_player_pool_hint }}</div>
+      <div class="pool-search">
+        <input type="text" id="pool-search" placeholder="{{ t.preview_filter_placeholder }}" oninput="filterPool(this.value)">
+      </div>
+      <div id="pool-list">
+        {% for p in pool %}
+        <div class="player-item"
+             draggable="true"
+             data-name="{{ p.Nazwa }}"
+             data-reso="{{ p.Rezonowanie }}"
+             data-klasa="{{ p.Klasa }}"
+             data-player='{{ p | tojson | e }}'
+             data-source="pool"
+             data-src="{{ source_color_map.get(p.get('source_file',''), '') if source_color_map|length > 1 else '' }}">
+          <span class="player-class-dot cls-dot-{{ p.Klasa | replace(' ','_') if p.Klasa else 'default' }}"></span>
+          {% if p.get('power') %}<span style="color:#f0c060;font-size:11px;">⚡</span>{% endif %}
+          <span class="player-name" title="{{ p.Nazwa }}">{{ p.Nazwa }}</span>
+          <span class="player-reso">{{ p.Rezonowanie }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- RIGHT: battles -->
+    <div class="battles-area">
+      <div class="battles-grid">
+        {% set tier_name_map = {'8': t.manual_tier_8, '4': t.manual_tier_4, '2': t.manual_tier_2, '1': t.manual_tier_1} %}
+        {% for i in range(12) %}
+        {% set tier = tier_labels[i] %}
+        <div class="battle-card">
+          <div class="battle-card-header">
+            <span class="battle-num">
+              {{ t.manual_battle_label }} {{ i+1 }}
+              <span class="tier-label tier-{{ tier }}">{{ tier_name_map[tier] }}</span>
+            </span>
+            <span class="battle-meta" id="meta-{{ i }}">0 {{ t.manual_players }}</span>
+          </div>
+          <div class="battle-drop-zone" id="battle-{{ i }}" data-battle="{{ i }}" data-tier="{{ tier }}">
+            <div class="battle-empty" id="empty-{{ i }}">{{ t.manual_battles_hint }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM ribbon -->
+  <div class="ribbon" style="margin-top:16px;">
+    <input type="text" name="roster_name" placeholder="{{ t.manual_select_title }}" style="max-width:200px; padding:8px 12px; font-size:13px;" />
+    <button type="submit" class="btn btn-primary">{{ t.manual_save }}</button>
+    <button type="button" class="btn btn-ghost" onclick="checkDups()">⚠ {{ t.manual_check_dup }}</button>
+    <a href="{{ url_for('main.manual_roster_select') }}" class="btn btn-ghost">← {{ t.upload_cancel }}</a>
+  </div>
+
+</form>
+
+<script>
+var SOURCE_COLOR_MAP = {{ source_color_map | tojson }};
+var SOURCE_COUNT = {{ source_color_map | length }};
+var MSG_DUP_NONE  = "{{ t.manual_dup_none }}";
+var MSG_DUP_FOUND = "{{ t.manual_dup_found }}";
+var MSG_PLAYERS   = "{{ t.manual_players }}";
+var MSG_AVG_RESO  = "{{ t.manual_avg_reso }}";
+
+// ── Drag state ──────────────────────────────────────────────────────
+var dragItem = null;   // the DOM element being dragged
+var dragFrom = null;   // 'pool' or battle index (int)
+
+// ── Init draggable on pool items ─────────────────────────────────────
+document.querySelectorAll('#pool-list .player-item').forEach(initPoolItem);
+
+function initPoolItem(el) {
+  el.addEventListener('dragstart', e => {
+    dragItem = el;
+    dragFrom = 'pool';
+    el.classList.add('dragging-item');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  el.addEventListener('dragend', () => el.classList.remove('dragging-item'));
+}
+
+// ── Battle drop zones ─────────────────────────────────────────────────
+document.querySelectorAll('.battle-drop-zone').forEach(zone => {
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drop-active'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drop-active'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drop-active');
+    if (!dragItem) return;
+    var battleIdx = parseInt(zone.dataset.battle);
+    if (dragFrom === 'pool') {
+      movePoolToBattle(dragItem, battleIdx);
+    } else if (dragFrom !== battleIdx) {
+      moveBattleToBattle(dragItem, dragFrom, battleIdx);
+    }
+    dragItem = null; dragFrom = null;
+  });
+});
+
+// ── Pool as drop target (return from battle) ───────────────────────
+var poolList = document.getElementById('pool-list');
+poolList.addEventListener('dragover', e => { e.preventDefault(); poolList.classList.add('drop-active'); });
+poolList.addEventListener('dragleave', () => poolList.classList.remove('drop-active'));
+poolList.addEventListener('drop', e => {
+  e.preventDefault();
+  poolList.classList.remove('drop-active');
+  if (!dragItem || dragFrom === 'pool') { dragItem = null; dragFrom = null; return; }
+  moveBattleToPool(dragItem, dragFrom);
+  dragItem = null; dragFrom = null;
+});
+
+// ── Movement functions ────────────────────────────────────────────────
+function movePoolToBattle(poolEl, battleIdx) {
+  var zone = document.getElementById('battle-' + battleIdx);
+  var player = JSON.parse(poolEl.dataset.player);
+  var bp = makeBattlePlayer(player, battleIdx);
+  zone.appendChild(bp);
+  poolEl.remove();
+  updateMeta(battleIdx);
+  updateEmptyHint(battleIdx);
+}
+
+function moveBattleToBattle(battleEl, fromIdx, toIdx) {
+  var zone = document.getElementById('battle-' + toIdx);
+  var player = JSON.parse(battleEl.dataset.player);
+  var bp = makeBattlePlayer(player, toIdx);
+  zone.appendChild(bp);
+  battleEl.remove();
+  updateMeta(fromIdx);
+  updateMeta(toIdx);
+  updateEmptyHint(fromIdx);
+  updateEmptyHint(toIdx);
+}
+
+function moveBattleToPool(battleEl, fromIdx) {
+  var player = JSON.parse(battleEl.dataset.player);
+  var pi = makePoolItem(player);
+  poolList.appendChild(pi);
+  initPoolItem(pi);
+  battleEl.remove();
+  updateMeta(fromIdx);
+  updateEmptyHint(fromIdx);
+}
+
+function makeBattlePlayer(player, battleIdx) {
+  var div = document.createElement('div');
+  div.className = 'battle-player';
+  div.draggable = true;
+  div.dataset.player = JSON.stringify(player);
+  div.dataset.name   = player['Nazwa'] || '';
+  div.dataset.battle = battleIdx;
+
+  var cls = (player['Klasa'] || 'default').replace(/ /g,'_');
+  var srcIdx = (SOURCE_COUNT > 1 && player['source_file']) ? (SOURCE_COLOR_MAP[player['source_file']] !== undefined ? SOURCE_COLOR_MAP[player['source_file']] : '') : '';
+  if (srcIdx !== '') div.dataset.src = srcIdx;
+  div.innerHTML =
+    '<span class="player-class-dot cls-dot-' + cls + '"></span>' +
+    (player['power'] || player['boosted'] ? '<span style="color:#f0c060;font-size:10px;">⚡</span>' : '') +
+    '<span class="bp-name" title="' + (player['Nazwa']||'') + '">' + (player['Nazwa']||'') + '</span>' +
+    '<span class="bp-reso">' + (player['Rezonowanie']||'') + '</span>';
+
+  div.addEventListener('dragstart', e => {
+    dragItem = div;
+    dragFrom = battleIdx;
+    div.classList.add('dragging-item');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  div.addEventListener('dragend', () => div.classList.remove('dragging-item'));
+  return div;
+}
+
+function makePoolItem(player) {
+  var div = document.createElement('div');
+  div.className = 'player-item';
+  div.draggable = true;
+  div.dataset.player = JSON.stringify(player);
+  div.dataset.name   = player['Nazwa'] || '';
+  div.dataset.source = 'pool';
+
+  var cls = (player['Klasa'] || 'default').replace(/ /g,'_');
+  var srcIdxP = (SOURCE_COUNT > 1 && player['source_file']) ? (SOURCE_COLOR_MAP[player['source_file']] !== undefined ? SOURCE_COLOR_MAP[player['source_file']] : '') : '';
+  if (srcIdxP !== '') div.dataset.src = srcIdxP;
+  div.innerHTML =
+    '<span class="player-class-dot cls-dot-' + cls + '"></span>' +
+    (player['power'] || player['boosted'] ? '<span style="color:#f0c060;font-size:11px;">⚡</span>' : '') +
+    '<span class="player-name" title="' + (player['Nazwa']||'') + '">' + (player['Nazwa']||'') + '</span>' +
+    '<span class="player-reso">' + (player['Rezonowanie']||'') + '</span>';
+  return div;
+}
+
+function updateMeta(battleIdx) {
+  var zone = document.getElementById('battle-' + battleIdx);
+  var players = zone.querySelectorAll('.battle-player');
+  var count = players.length;
+  var reso = 0, n = 0;
+  players.forEach(p => {
+    var r = parseInt(JSON.parse(p.dataset.player)['Rezonowanie'] || 0);
+    if (!isNaN(r)) { reso += r; n++; }
+  });
+  var avg = n > 0 ? Math.round(reso / n) : 0;
+  var meta = document.getElementById('meta-' + battleIdx);
+  meta.textContent = count + ' ' + MSG_PLAYERS + (n > 0 ? '  ·  ø ' + MSG_AVG_RESO + ' ' + avg : '');
+}
+
+function updateEmptyHint(battleIdx) {
+  var zone  = document.getElementById('battle-' + battleIdx);
+  var empty = document.getElementById('empty-' + battleIdx);
+  if (!empty) return;
+  empty.style.display = zone.querySelectorAll('.battle-player').length > 0 ? 'none' : 'block';
+}
+
+// ── Pool search filter ────────────────────────────────────────────────
+function filterPool(q) {
+  q = q.toLowerCase();
+  poolList.querySelectorAll('.player-item').forEach(el => {
+    el.style.display = el.dataset.name.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+// ── Serialize on submit ───────────────────────────────────────────────
+function serializeComposer() {
+  var groups = [];
+  for (var i = 0; i < 12; i++) {
+    var zone = document.getElementById('battle-' + i);
+    var group = [];
+    zone.querySelectorAll('.battle-player').forEach(el => {
+      try { group.push(JSON.parse(el.dataset.player)); } catch(ex) {}
+    });
+    groups.push(group);
+  }
+  document.getElementById('roster-state-field').value = JSON.stringify(groups);
+
+  // Sync roster_name from whichever input was last typed in
+  var names = document.querySelectorAll('input[name=roster_name]');
+  var name = '';
+  names.forEach(n => { if (n.value.trim()) name = n.value.trim(); });
+  names.forEach(n => n.value = name);
+}
+
+// ── Duplicate check ───────────────────────────────────────────────────
+function checkDups() {
+  document.querySelectorAll('.battle-player').forEach(el => el.classList.remove('dup'));
+  var counts = {};
+  document.querySelectorAll('.battle-player').forEach(el => {
+    var name = el.dataset.name;
+    counts[name] = (counts[name]||0) + 1;
+  });
+  var dups = Object.entries(counts).filter(([n,c]) => c > 1);
+  var banner   = document.getElementById('dup-banner');
+  var noBanner = document.getElementById('no-dup-banner');
+  if (dups.length === 0) {
+    banner.classList.remove('visible');
+    noBanner.textContent = '✓ ' + MSG_DUP_NONE;
+    noBanner.classList.add('visible');
+    return;
+  }
+  noBanner.classList.remove('visible');
+  var dupSet = new Set(dups.map(([n]) => n));
+  document.querySelectorAll('.battle-player').forEach(el => {
+    if (dupSet.has(el.dataset.name)) el.classList.add('dup');
+  });
+  banner.textContent = '⚠ ' + MSG_DUP_FOUND + ' ' + dups.map(([n,c]) => n+'(×'+c+')').join(', ');
+  banner.classList.add('visible');
+}
+</script>
+{% endblock %}

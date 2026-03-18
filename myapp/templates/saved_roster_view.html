@@ -10,6 +10,13 @@
 /* Action ribbon (shared top + bottom) */
 .action-ribbon{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:12px 0;}
 .drag-hint{font-size:11px;color:var(--muted);margin-left:4px;font-style:italic;}
+/* Source file colour coding */
+tr[data-src="0"] td:first-child { border-left: 3px solid rgba(240,100,100,.5); }
+tr[data-src="0"] td { background: rgba(240,100,100,.04); }
+tr[data-src="1"] td:first-child { border-left: 3px solid rgba(100,150,240,.5); }
+tr[data-src="1"] td { background: rgba(100,150,240,.04); }
+tr[data-src="2"] td:first-child { border-left: 3px solid rgba(100,210,130,.5); }
+tr[data-src="2"] td { background: rgba(100,210,130,.04); }
 
 /* Main layout: roster grid + drop zone side by side */
 .roster-layout{display:grid;grid-template-columns:1fr 200px;gap:16px;align-items:start;}
@@ -178,7 +185,18 @@ tr.drag-over td{background:rgba(200,240,122,.15) !important;outline:2px dashed v
 <div class="roster-layout">
 
   <!-- Left: battles grid -->
-  <div class="battles-grid">
+  {% if source_files | length > 1 %}
+<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+  {% set src_colors = ['rgba(240,100,100,.7)','rgba(100,150,240,.7)','rgba(100,210,130,.7)'] %}
+  {% for sf in source_files %}
+  <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
+    <span style="width:10px;height:10px;border-radius:2px;background:{{ src_colors[loop.index0] }};flex-shrink:0;"></span>
+    {{ sf }}
+  </span>
+  {% endfor %}
+</div>
+{% endif %}
+<div class="battles-grid">
     {% for group in groups %}
     {% set stat = group_stats[loop.index0] %}
     {% set gi = loop.index0 %}

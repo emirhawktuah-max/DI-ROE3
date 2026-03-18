@@ -265,6 +265,26 @@ TRANSLATIONS = {
         # Footer
         'footer': 'DataFlow · built with Flask',
 
+        # Manual Roster Composer
+        'nav_manual_roster': 'Manual Roster',
+        'manual_select_title': 'Manual Roster Composer',
+        'manual_select_subtitle': 'Select 1–3 uploaded files to compose your roster from.',
+        'manual_player_pool': 'Player Pool',
+        'manual_player_pool_hint': 'Drag players to battles →',
+        'manual_battles_hint': 'Drop here. Drag back to pool to remove.',
+        'manual_battle_label': 'Battle',
+        'manual_tier_8': '8 pts', 'manual_tier_4': '4 pts',
+        'manual_tier_2': '2 pts', 'manual_tier_1': '1 pt',
+        'manual_save': 'Save Roster',
+        'manual_saved': 'Roster saved.',
+        'manual_check_dup': 'Check Duplicates',
+        'manual_dup_none': 'No duplicates found.',
+        'manual_dup_found': 'Duplicates found:',
+        'manual_players': 'players',
+        'manual_avg_reso': 'avg reso',
+        'manual_error_no_files': 'Select at least one file.',
+        'manual_error_too_many': 'Maximum 3 files allowed.',
+
         # Language toggle
         'select_placeholder': '— select —',
         'lang_switch': 'Polski',
@@ -535,6 +555,26 @@ TRANSLATIONS = {
 
         # Footer
         'footer': 'DataFlow · zbudowano z Flask',
+
+        # Manual Roster Composer
+        'nav_manual_roster': 'Ręczny skład',
+        'manual_select_title': 'Ręczny kompozytor składu',
+        'manual_select_subtitle': 'Wybierz 1–3 pliki, aby ułożyć skład ręcznie.',
+        'manual_player_pool': 'Pula graczy',
+        'manual_player_pool_hint': 'Przeciągaj graczy do bitew →',
+        'manual_battles_hint': 'Upuść tutaj. Przeciągnij z powrotem do puli.',
+        'manual_battle_label': 'Bitwa',
+        'manual_tier_8': '8 pkt', 'manual_tier_4': '4 pkt',
+        'manual_tier_2': '2 pkt', 'manual_tier_1': '1 pkt',
+        'manual_save': 'Zapisz skład',
+        'manual_saved': 'Skład zapisany.',
+        'manual_check_dup': 'Sprawdź duplikaty',
+        'manual_dup_none': 'Brak duplikatów.',
+        'manual_dup_found': 'Znaleziono duplikaty:',
+        'manual_players': 'graczy',
+        'manual_avg_reso': 'śr. reso',
+        'manual_error_no_files': 'Wybierz co najmniej jeden plik.',
+        'manual_error_too_many': 'Maksymalnie 3 pliki.',
 
         # Language toggle
         'select_placeholder': '— wybierz —',
