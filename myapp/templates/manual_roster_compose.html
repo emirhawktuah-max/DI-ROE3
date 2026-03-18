@@ -201,10 +201,7 @@
 <div class="page-subtitle">{{ source_files | join(', ') }}</div>
 
 <form method="POST" action="{{ url_for('main.manual_roster_save') }}" id="composer-form" onsubmit="serializeComposer()">
-  <input type="hidden" name="roster_state"  id="roster-state-field"  value="[]">
-  <input type="hidden" name="columns_data"  id="columns-field"       value="{{ columns | tojson | e }}">
-  <input type="hidden" name="player_pool"   id="pool-field"          value="{{ pool | tojson | e }}">
-  <input type="hidden" name="config_data"   id="config-field"        value="{{ config_json | e }}">
+  <input type="hidden" name="roster_state" id="roster-state-field" value="[]">
 
   <!-- TOP ribbon -->
   <div class="ribbon">

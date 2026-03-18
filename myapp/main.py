@@ -1198,6 +1198,17 @@ def manual_roster_compose():
 
     source_color_map = {sf: i for i, sf in enumerate(source_files)}
 
+    # Store heavy data server-side to avoid large hidden form fields
+    import pickle
+    tmp_path = os.path.join(current_app.config['UPLOAD_FOLDER'],
+                            f'_manual_tmp_{current_user.id}.pkl')
+    with open(tmp_path, 'wb') as f:
+        pickle.dump({
+            'columns':     columns_used or [],
+            'player_pool': clean_pool,
+            'config':      config,
+        }, f)
+
     return render_template('manual_roster_compose.html',
                            pool=clean_pool,
                            columns=columns_used or [],
@@ -1216,17 +1227,28 @@ def manual_roster_save():
     import traceback
     tr = t()
 
+    import pickle
     roster_state_json = request.form.get('roster_state', '')
-    columns_json      = request.form.get('columns_data', '[]')
-    pool_json         = request.form.get('player_pool', '[]')
-    config_json       = request.form.get('config_data', '{}')
     roster_name       = request.form.get('roster_name', '').strip()
 
     if not roster_state_json:
-        flash('No roster data received.', 'error')
+        flash('No roster data received — please try again.', 'error')
+        return redirect(url_for('main.manual_roster_select'))
+
+    # Load heavy data from temp file
+    tmp_path = os.path.join(current_app.config['UPLOAD_FOLDER'],
+                            f'_manual_tmp_{current_user.id}.pkl')
+    if not os.path.exists(tmp_path):
+        flash('Session expired — please reopen the composer.', 'error')
         return redirect(url_for('main.manual_roster_select'))
 
     try:
+        with open(tmp_path, 'rb') as f:
+            tmp = pickle.load(f)
+        columns    = tmp.get('columns', [])
+        pool       = tmp.get('player_pool', [])
+        config     = tmp.get('config', {})
+
         groups = json.loads(roster_state_json)
         today  = date.today().strftime('%Y-%m-%d')
         name   = roster_name if roster_name else f"{current_user.username}_manual_{today}"
@@ -1235,10 +1257,10 @@ def manual_roster_save():
             name=name,
             created_by=current_user.id,
             battle_type='Manual',
-            config=config_json,
+            config=json.dumps(config),
             groups_data=json.dumps(groups),
-            columns_data=columns_json,
-            player_pool=pool_json,
+            columns_data=json.dumps(columns),
+            player_pool=json.dumps(pool),
             overrides='{}',
         )
         db.session.add(sr)
