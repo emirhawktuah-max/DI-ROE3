@@ -13,15 +13,17 @@
 
 
 /* Main layout: roster grid + drop zone side by side */
-.roster-layout{display:grid;grid-template-columns:1fr 200px;gap:16px;align-items:start;}
-@media(max-width:800px){.roster-layout{grid-template-columns:1fr;}}
+.roster-layout{display:grid;grid-template-columns:1fr 180px;gap:20px;align-items:start;}
+@media(max-width:900px){.roster-layout{grid-template-columns:1fr;}}
 
 /* Drop zone */
 .drop-zone{
   border:2px dashed var(--border);
   border-radius:var(--radius);
   background:var(--surface);
-  min-height:400px;
+  min-height:300px;
+  max-height:calc(100vh - 140px);
+  overflow-y:auto;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -81,7 +83,7 @@
 .drop-zone-empty{font-size:10px;color:var(--muted);text-align:center;opacity:.6;margin-top:8px;}
 
 /* Battle grid */
-.battles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(460px,1fr));gap:16px;}
+.battles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:12px;}
 @media(max-width:600px){.battles-grid{grid-template-columns:1fr;}}
 .battle-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
 .battle-card-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#1e1e1e;border-bottom:1px solid var(--border);}
@@ -93,9 +95,9 @@
 .tier-1{background:#2e0f0f;color:#f07070;border:1px solid #5c1a1a;}
 .battle-stats{font-size:11px;color:var(--muted);text-align:right;}
 .battle-stats strong{color:var(--text);}
-.battle-table{width:100%;border-collapse:collapse;font-size:12px;}
-.battle-table th{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);padding:6px 10px;text-align:left;background:#1a1a1a;}
-.battle-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.battle-table{width:100%;border-collapse:collapse;font-size:11px;}
+.battle-table th{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:1px solid var(--border);padding:5px 8px;text-align:left;background:#1a1a1a;}
+.battle-table td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:middle;}
 .battle-table tr:last-child td{border-bottom:none;}
 .battle-table tbody tr:hover td{background:rgba(255,255,255,.03);}
 .battle-table tr.row-dropped{display:none;}
@@ -119,7 +121,7 @@
 .cls-default{background:#1a1a1a;color:var(--muted);border:1px solid var(--border);}
 .rank-outside{color:var(--muted);font-size:10px;font-style:italic;}
 
-.override-select{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:3px 6px;border-radius:var(--radius);outline:none;width:100%;transition:border-color .15s;}
+.override-select{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:10px;padding:2px 4px;border-radius:var(--radius);outline:none;width:100%;min-width:80px;max-width:130px;transition:border-color .15s;}
 .override-select:focus{border-color:var(--accent);}
 .override-select.changed{border-color:var(--accent2);}
 
@@ -178,19 +180,20 @@ tr.drag-over td{background:rgba(200,240,122,.15) !important;outline:2px dashed v
 <!-- Main layout -->
 <div class="roster-layout">
 
-  <!-- Left: battles grid -->
+  <!-- Left: battles grid (wrapped properly) -->
+  <div>
   {% if source_files | length > 1 %}
-<div style="display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
-  {% set src_clrs = ['#e87070','#70a0f0','#60d090'] %}
-  {% for sf in source_files %}
-  <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;">
-    <span style="width:8px;height:8px;border-radius:50%;background:{{ src_clrs[loop.index0] }};flex-shrink:0;"></span>
-    <span style="color:{{ src_clrs[loop.index0] }};">{{ sf }}</span>
-  </span>
-  {% endfor %}
-</div>
-{% endif %}
-<div class="battles-grid">
+  <div style="display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+    {% set src_clrs = ['#e87070','#70a0f0','#60d090'] %}
+    {% for sf in source_files %}
+    <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;">
+      <span style="width:8px;height:8px;border-radius:50%;background:{{ src_clrs[loop.index0] }};flex-shrink:0;"></span>
+      <span style="color:{{ src_clrs[loop.index0] }};">{{ sf }}</span>
+    </span>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div class="battles-grid">
     {% for group in groups %}
     {% set stat = group_stats[loop.index0] %}
     {% set gi = loop.index0 %}
@@ -256,6 +259,7 @@ tr.drag-over td{background:rgba(200,240,122,.15) !important;outline:2px dashed v
     </div>
     {% endfor %}
   </div>
+  </div><!-- end battles wrapper -->
 
   <!-- Right: drop zone -->
   <div class="drop-zone" id="drop-zone">
