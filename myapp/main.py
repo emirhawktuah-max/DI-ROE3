@@ -1170,6 +1170,7 @@ def manual_roster_compose():
         for i, row in enumerate(rows):
             row['_confirmed'] = confirmed_map.get(str(i), False)
             row['_power']     = power_map.get(str(i), False)
+            row['_source']    = upload_rec.original_filename
             all_players.append(row)
         source_files.append(upload_rec.original_filename)
 
