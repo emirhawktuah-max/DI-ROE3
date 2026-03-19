@@ -1514,16 +1514,14 @@ def fast_track():
             buf=BytesIO(); wb.save(buf); buf.seek(0)
             xlsx_bytes=buf.getvalue()
             safe_name=name.replace(' ','_')
-            resp=current_app.response_class(
-                xlsx_bytes,
-                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            )
-            resp.headers['Content-Disposition']=f'attachment; filename="{safe_name}.xlsx"'
-            resp.headers['Content-Length']=len(xlsx_bytes)
-            # Flash so user sees it after redirect (but we return excel directly)
-            # Store saved roster id in session so we can redirect after download
+            # Store excel bytes in session-linked temp file, redirect to download endpoint
+            import pickle as _pkl
+            ft_tmp = os.path.join(current_app.config['UPLOAD_FOLDER'], f'_ft_xlsx_{current_user.id}.pkl')
+            with open(ft_tmp, 'wb') as _f:
+                _pkl.dump({'bytes': xlsx_bytes, 'name': safe_name}, _f)
             session['ft_roster_id'] = sr.id
-            return resp
+            flash(tr['fast_track_success'], 'success')
+            return redirect(url_for('main.fast_track_download'))
 
         except Exception as e:
             current_app.logger.error(f'fast_track export error: {_tb.format_exc()}')
@@ -1531,3 +1529,49 @@ def fast_track():
             return redirect(url_for('main.saved_roster_view', roster_id=sr.id))
 
     return render_template('fast_track.html', clan_options=CLAN_OPTIONS)
+
+
+@main_bp.route('/fast-track/download')
+@login_required
+def fast_track_download():
+    """Serves the pre-built Excel and then redirects to the saved roster."""
+    import pickle as _pkl
+    ft_tmp = os.path.join(current_app.config['UPLOAD_FOLDER'], f'_ft_xlsx_{current_user.id}.pkl')
+    roster_id = session.pop('ft_roster_id', None)
+
+    if not os.path.exists(ft_tmp):
+        if roster_id:
+            return redirect(url_for('main.saved_roster_view', roster_id=roster_id))
+        return redirect(url_for('main.fast_track'))
+
+    with open(ft_tmp, 'rb') as _f:
+        data = _pkl.load(_f)
+    os.remove(ft_tmp)
+
+    xlsx_bytes = data['bytes']
+    safe_name  = data['name']
+
+    # We need to serve the file AND redirect — use meta-refresh page
+    import base64 as _b64
+    b64 = _b64.b64encode(xlsx_bytes).decode()
+    redirect_url = url_for('main.saved_roster_view', roster_id=roster_id) if roster_id else url_for('main.saved_rosters_list')
+
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<script>
+(function(){{
+  var b64="{b64}";
+  var bin=atob(b64);
+  var arr=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+  var blob=new Blob([arr],{{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download="{safe_name}.xlsx"; document.body.appendChild(a); a.click();
+  setTimeout(function(){{ window.location="{redirect_url}"; }}, 800);
+}})();
+</script>
+</head><body style="font-family:sans-serif;padding:40px;color:#888;">
+  Downloading Excel and redirecting…
+</body></html>"""
+    return html

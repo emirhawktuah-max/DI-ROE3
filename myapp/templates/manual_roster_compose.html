@@ -47,7 +47,7 @@
 .bp-reso{font-size:10px;color:var(--muted);flex-shrink:0;}
 .battle-empty{font-size:10px;color:var(--muted);text-align:center;padding:12px 6px;font-style:italic;}
 .over-limit{border-color:rgba(240,160,60,.4)!important;background:rgba(240,160,60,.06)!important;}
-.over-warning{font-size:9px;color:#f0a060;padding:2px 6px;text-align:center;}
+.over-warning{font-size:9px;color:#f0a060;padding:2px 6px;text-align:center;pointer-events:none;}
 
 /* Class badge colours */
 .cls-Nekromanta,.cls-Nekromanta-b{background:#1a1a2e;color:#a0a0f0;border:1px solid #2a2a4e;}
@@ -218,8 +218,11 @@ function initPoolItem(el) {
 }
 
 document.querySelectorAll('.battle-drop-zone').forEach(zone => {
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drop-active'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('drop-active'));
+  zone.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); zone.classList.add('drop-active'); });
+  zone.addEventListener('dragleave', e => {
+    // Only remove if leaving to outside the zone
+    if (!zone.contains(e.relatedTarget)) zone.classList.remove('drop-active');
+  });
   zone.addEventListener('drop', e => {
     e.preventDefault(); zone.classList.remove('drop-active');
     if (!dragItem) return;
@@ -228,6 +231,10 @@ document.querySelectorAll('.battle-drop-zone').forEach(zone => {
     else if (dragFrom !== idx) moveBattleToBattle(dragItem, dragFrom, idx);
     dragItem = null; dragFrom = null;
   });
+});
+// Also catch dragover on battle cards themselves (needed when warning div is shown)
+document.querySelectorAll('.battle-card').forEach(card => {
+  card.addEventListener('dragover', e => { e.preventDefault(); });
 });
 
 var poolList = document.getElementById('pool-list');
