@@ -219,11 +219,12 @@ function initPoolItem(el) {
 
 // Use event delegation on document for dragover/drop so over-limit cards don't block
 document.addEventListener('dragover', e => {
-  // Allow drop anywhere inside a battle-drop-zone
+  // Always preventDefault inside any battle-card (not just the drop zone)
+  // so the browser never marks the drag as rejected mid-flight
   var zone = e.target.closest('.battle-drop-zone');
   if (zone) { e.preventDefault(); zone.classList.add('drop-active'); return; }
-  // Also allow drop on pool-list
-  if (e.target.closest('#pool-list')) { e.preventDefault(); return; }
+  if (e.target.closest('.battle-card')) { e.preventDefault(); return; }
+  if (e.target.closest('#pool-list'))   { e.preventDefault(); return; }
 });
 
 document.addEventListener('dragleave', e => {
