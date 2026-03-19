@@ -296,6 +296,14 @@ TRANSLATIONS = {
         'fast_track_processing': 'Processing…',
         'fast_track_settings_label': 'Fixed settings — no choices needed',
         'fast_track_note': 'File saved to My Uploads. Roster saved to Saved Rosters. Excel downloaded instantly.',
+        # Nav tooltips
+        'tip_dashboard': 'Home screen with instructions and quick links',
+        'tip_upload': 'Upload a new game export file (.txt)',
+        'tip_my_uploads': 'View, manage and mark attendance in uploaded files',
+        'tip_roster': 'Auto-generate battle rosters from uploaded files',
+        'tip_saved_rosters': 'View, edit and export previously saved rosters',
+        'tip_manual_roster': 'Build a roster manually by drag & drop',
+        'tip_fast_track': 'Upload a file and instantly get a ready Excel roster',
 
         # Language toggle
         'select_placeholder': '— select —',
@@ -589,8 +597,8 @@ TRANSLATIONS = {
         'manual_error_no_files': 'Wybierz co najmniej jeden plik.',
         'manual_error_too_many': 'Maksymalnie 3 pliki.',
         'manual_over_limit': 'Ponad 8 graczy — tylko informacja',
-        'fast_track_nav': 'Szybki tor ⚡',
-        'fast_track_title': 'Generator szybkiego toru',
+        'fast_track_nav': 'Szybka Ścieżka ⚡',
+        'fast_track_title': 'Generator Szybkiej Ścieżki',
         'fast_track_subtitle': 'Wgraj plik i od razu dostań gotowy skład w Excelu.',
         'fast_track_btn': 'Wykonaj i daj mi Excela',
         'fast_track_success': 'Skład wygenerowany, zapisany i wyeksportowany!',
@@ -599,6 +607,14 @@ TRANSLATIONS = {
         'fast_track_processing': 'Przetwarzanie…',
         'fast_track_settings_label': 'Stałe ustawienia — bez wyborów',
         'fast_track_note': 'Plik zapisany w Moje pliki. Skład zapisany w Zapisane składy. Excel pobierany natychmiast.',
+        # Nav tooltips
+        'tip_dashboard': 'Strona główna z instrukcją i szybkimi linkami',
+        'tip_upload': 'Wgraj nowy eksport z gry (.txt)',
+        'tip_my_uploads': 'Przeglądaj pliki, zaznaczaj obecność',
+        'tip_roster': 'Automatycznie generuj składy do bitew',
+        'tip_saved_rosters': 'Przeglądaj, edytuj i eksportuj zapisane składy',
+        'tip_manual_roster': 'Ułóż skład ręcznie metodą przeciągnij i upuść',
+        'tip_fast_track': 'Wgraj plik i od razu pobierz gotowy skład w Excelu',
 
         # Language toggle
         'select_placeholder': '— wybierz —',

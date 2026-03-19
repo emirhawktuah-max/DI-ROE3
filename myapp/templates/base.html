@@ -61,6 +61,39 @@
       transition: color .15s;
     }
     .nav-links a:hover { color: var(--text); }
+    .nav-links a { position: relative; }
+    .nav-links a[data-tip]:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      top: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e1e1e;
+      color: #ccc;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 11px;
+      white-space: nowrap;
+      z-index: 999;
+      pointer-events: none;
+      box-shadow: 0 4px 14px rgba(0,0,0,.5);
+      line-height: 1.5;
+      max-width: 240px;
+      white-space: normal;
+      text-align: center;
+    }
+    .nav-links a[data-tip]:hover::before {
+      content: '';
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-bottom-color: #2a2a2a;
+      z-index: 999;
+      pointer-events: none;
+    }
     .nav-user {
       margin-left: auto;
       display: flex;
@@ -204,15 +237,15 @@
 
 {% if current_user.is_authenticated %}
 <nav>
-  <a href="{{ url_for('main.dashboard') }}" class="nav-brand">DataFlow</a>
+  <a href="{{ url_for('main.dashboard') }}" data-tip="{{ t.tip_dashboard }}" class="nav-brand">DataFlow</a>
   <div class="nav-links">
-    <a href="{{ url_for('main.dashboard') }}">{{ t.nav_dashboard }}</a>
-    <a href="{{ url_for('main.upload') }}">{{ t.nav_upload }}</a>
-    <a href="{{ url_for('main.manage_uploads') }}">{{ t.nav_my_uploads }}</a>
-    <a href="{{ url_for('main.roster_select') }}">{{ t.nav_roster }}</a>
-    <a href="{{ url_for('main.saved_rosters_list') }}">{{ t.nav_saved_rosters }}</a>
-    <a href="{{ url_for('main.manual_roster_select') }}">{{ t.nav_manual_roster }}</a>
-    <a href="{{ url_for('main.fast_track') }}" style="background:rgba(255,105,180,.18);color:#ff69b4;border:1px solid rgba(255,105,180,.35);border-radius:99px;padding:3px 12px;font-weight:600;letter-spacing:.02em;">{{ t.fast_track_nav }}</a>
+    <a href="{{ url_for('main.dashboard') }}" data-tip="{{ t.tip_dashboard }}">{{ t.nav_dashboard }}</a>
+    <a href="{{ url_for('main.upload') }}" data-tip="{{ t.tip_upload }}">{{ t.nav_upload }}</a>
+    <a href="{{ url_for('main.manage_uploads') }}" data-tip="{{ t.tip_my_uploads }}">{{ t.nav_my_uploads }}</a>
+    <a href="{{ url_for('main.roster_select') }}" data-tip="{{ t.tip_roster }}">{{ t.nav_roster }}</a>
+    <a href="{{ url_for('main.saved_rosters_list') }}" data-tip="{{ t.tip_saved_rosters }}">{{ t.nav_saved_rosters }}</a>
+    <a href="{{ url_for('main.manual_roster_select') }}" data-tip="{{ t.tip_manual_roster }}">{{ t.nav_manual_roster }}</a>
+    <a href="{{ url_for('main.fast_track') }}" data-tip="{{ t.tip_fast_track }}" style="background:rgba(255,105,180,.18);color:#ff69b4;border:1px solid rgba(255,105,180,.35);border-radius:99px;padding:3px 12px;font-weight:600;letter-spacing:.02em;">{{ t.fast_track_nav }}</a>
     {% if current_user.is_admin() %}
     <a href="{{ url_for('admin.index') }}">{{ t.nav_admin }}</a>
     {% endif %}
