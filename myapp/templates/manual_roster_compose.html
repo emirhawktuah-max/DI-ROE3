@@ -46,8 +46,7 @@
 .bp-class{font-size:9px;padding:1px 5px;border-radius:99px;flex-shrink:0;white-space:nowrap;}
 .bp-reso{font-size:10px;color:var(--muted);flex-shrink:0;}
 .battle-empty{font-size:10px;color:var(--muted);text-align:center;padding:12px 6px;font-style:italic;}
-.over-limit{border-color:rgba(240,160,60,.4)!important;background:rgba(240,160,60,.06)!important;}
-.over-warning{font-size:9px;color:#f0a060;padding:2px 6px;text-align:center;pointer-events:none;}
+.over-limit{border-color:rgba(240,160,60,.4)!important;}
 
 /* Class badge colours */
 .cls-Nekromanta,.cls-Nekromanta-b{background:#1a1a2e;color:#a0a0f0;border:1px solid #2a2a4e;}
@@ -136,6 +135,7 @@
 
     <!-- RIGHT: battles -->
     <div>
+      <div id="over-banner" style="display:none;padding:8px 12px;margin-bottom:10px;background:rgba(240,160,60,.12);border:1px solid rgba(240,160,60,.4);border-radius:var(--radius);font-size:12px;color:#f0a060;"></div>
       <div class="battles-grid">
         {% set tier_name_map = {'8': t.manual_tier_8, '4': t.manual_tier_4, '2': t.manual_tier_2, '1': t.manual_tier_1} %}
         {% for i in range(12) %}
@@ -151,7 +151,6 @@
           <div class="battle-drop-zone" id="battle-{{ i }}" data-battle="{{ i }}" data-tier="{{ tier }}">
             <div class="battle-empty" id="empty-{{ i }}">{{ t.manual_battles_hint }}</div>
           </div>
-          <div class="over-warning" id="warn-{{ i }}" style="display:none;">⚠ {{ t.manual_over_limit }}</div>
         </div>
         {% endfor %}
       </div>
@@ -176,6 +175,7 @@ var MSG_DUP_FOUND    = "{{ t.manual_dup_found }}";
 var MSG_PLAYERS      = "{{ t.manual_players }}";
 var MSG_AVG_RESO     = "{{ t.manual_avg_reso }}";
 var MSG_OVER_LIMIT   = "{{ t.manual_over_limit }}";
+var MSG_BATTLE       = "{{ t.manual_battle_label }}";
 
 /* CLASS badge colours — must match CSS */
 var CLASS_CSS = {
@@ -330,12 +330,24 @@ function updateMeta(idx) {
   var avg = n > 0 ? Math.round(reso / n) : 0;
   var meta = document.getElementById('meta-' + idx);
   meta.textContent = count + ' ' + MSG_PLAYERS + (n > 0 ? '  ·  ø ' + avg : '');
-  var warn = document.getElementById('warn-' + idx);
-  warn.style.display = count > 8 ? 'block' : 'none';
   var card = document.getElementById('bcard-' + idx);
   card.classList.toggle('over-limit', count > 8);
   var empty = document.getElementById('empty-' + idx);
   if (empty) empty.style.display = count > 0 ? 'none' : 'block';
+  // Update shared banner listing all over-limit battles
+  var overBanner = document.getElementById('over-banner');
+  var overList = [];
+  for (var b = 0; b < 12; b++) {
+    var bzone = document.getElementById('battle-' + b);
+    if (bzone && bzone.querySelectorAll('.battle-player').length > 8)
+      overList.push(MSG_BATTLE + ' ' + (b + 1));
+  }
+  if (overList.length > 0) {
+    overBanner.style.display = 'block';
+    overBanner.textContent = '⚠ ' + MSG_OVER_LIMIT + ': ' + overList.join(', ');
+  } else {
+    overBanner.style.display = 'none';
+  }
 }
 
 function filterPool(q) {
