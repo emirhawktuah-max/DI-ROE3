@@ -294,24 +294,37 @@ tr.drag-over td{background:rgba(200,240,122,.15) !important;outline:2px dashed v
 
 <script>
 // Player pool for lookup
-var PLAYER_POOL = {{ player_pool | tojson }};
+var PLAYER_POOL       = {{ player_pool | tojson }};
+var SOURCE_COLOR_MAP  = {{ source_color_map | tojson }};
+var SOURCE_COUNT      = {{ source_color_map | length }};
+var SRC_COLORS        = ['#e87070','#70a0f0','#60d090'];
 
 function getPlayerByName(name) {
   return PLAYER_POOL.find(p => p['Nazwa'] === name) || null;
 }
 
+function getSrcColor(player) {
+  if (SOURCE_COUNT <= 1) return '';
+  var idx = SOURCE_COLOR_MAP[player['source_file'] || ''];
+  return (idx !== undefined && SRC_COLORS[idx]) ? SRC_COLORS[idx] : '';
+}
+
+function applyNameColor(nameCell, player) {
+  // Apply source colour to name-cell; preserve boosted icon
+  var col = getSrcColor(player);
+  nameCell.style.color = col || '';
+  nameCell.dataset.name = player['Nazwa'] || '';
+  nameCell.innerHTML = (player['boosted'] ? '<span style="color:#f0c060;margin-right:4px;">⚡</span>' : '') + (player['Nazwa'] || '');
+}
+
 function updateRowPlayer(select) {
-  // When dropdown changes, update the row's data-player to reflect chosen player
   var row = select.closest('tr');
   var chosen = getPlayerByName(select.value);
   if (chosen) {
     row.dataset.player = JSON.stringify(chosen);
-    // Also update the name-cell display
     var nameCell = row.querySelector('.name-cell');
-    if (nameCell) {
-      nameCell.dataset.name = chosen['Nazwa'] || '';
-      nameCell.innerHTML = (chosen['boosted'] ? '<span style="color:#f0c060;margin-right:4px;">⚡</span>' : '') + (chosen['Nazwa'] || '');
-    }
+    if (nameCell) applyNameColor(nameCell, chosen);
+    row.classList.add('row-modified');
   }
 }
 
@@ -449,8 +462,14 @@ function swapRows(rowA, rowB) {
     selA.classList.add('changed');
     selB.classList.add('changed');
   }
+  // Recolour name cells from their own player data
   [rowA, rowB].forEach(r => {
     r.classList.add('row-modified');
+    try {
+      var p = JSON.parse(r.dataset.player || '{}');
+      var nc = r.querySelector('.name-cell');
+      if (nc) applyNameColor(nc, p);
+    } catch(ex) {}
     r.querySelectorAll('td').forEach(td => {
       td.style.background = 'rgba(200,240,122,.2)';
       setTimeout(() => td.style.background = '', 400);
@@ -463,6 +482,18 @@ function setSelectValue(sel, val) {
     if (opt.value === val) { sel.value = val; return; }
   }
 }
+
+// ─── Init: colour all name cells from their row's data-player ────────
+document.querySelectorAll('tr[data-player]').forEach(function(row) {
+  try {
+    var p = JSON.parse(row.dataset.player || '{}');
+    var nc = row.querySelector('.name-cell');
+    if (nc) {
+      var col = getSrcColor(p);
+      if (col) nc.style.color = col;
+    }
+  } catch(ex) {}
+});
 
 // ─── Duplicate check ────────────────────────────────────────────────
 function checkDuplicates() {

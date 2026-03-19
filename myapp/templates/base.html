@@ -212,6 +212,7 @@
     <a href="{{ url_for('main.roster_select') }}">{{ t.nav_roster }}</a>
     <a href="{{ url_for('main.saved_rosters_list') }}">{{ t.nav_saved_rosters }}</a>
     <a href="{{ url_for('main.manual_roster_select') }}">{{ t.nav_manual_roster }}</a>
+    <a href="{{ url_for('main.fast_track') }}" style="background:rgba(255,105,180,.18);color:#ff69b4;border:1px solid rgba(255,105,180,.35);border-radius:99px;padding:3px 12px;font-weight:600;letter-spacing:.02em;">{{ t.fast_track_nav }}</a>
     {% if current_user.is_admin() %}
     <a href="{{ url_for('admin.index') }}">{{ t.nav_admin }}</a>
     {% endif %}

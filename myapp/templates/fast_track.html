@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ t.fast_track_title }} — DataFlow{% endblock %}
+{% block head %}
+<style>
+.ft-card{max-width:520px;margin:40px auto;background:var(--surface);border:1px solid rgba(255,105,180,.25);border-radius:var(--radius);overflow:hidden;}
+.ft-header{padding:28px 32px 20px;background:rgba(255,105,180,.08);border-bottom:1px solid rgba(255,105,180,.2);}
+.ft-title{font-family:var(--serif);font-size:28px;font-weight:300;color:#ff69b4;margin-bottom:6px;}
+.ft-subtitle{font-size:13px;color:var(--muted);}
+.ft-body{padding:28px 32px;}
+.ft-field{margin-bottom:20px;}
+.ft-field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;}
+.ft-field input[type=file], .ft-field select{
+  width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);
+  font-family:var(--mono);font-size:13px;padding:10px 12px;border-radius:var(--radius);outline:none;
+}
+.ft-field input[type=file]:focus, .ft-field select:focus{border-color:#ff69b4;}
+.ft-settings{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:24px;}
+.ft-settings-title{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;}
+.ft-setting-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);padding:3px 0;}
+.ft-setting-row span{color:var(--accent);font-weight:500;}
+.btn-ft{width:100%;padding:14px;font-size:15px;font-weight:600;background:#ff69b4;color:#0f0f0f;border:none;border-radius:var(--radius);cursor:pointer;transition:opacity .15s;letter-spacing:.02em;}
+.btn-ft:hover{opacity:.88;}
+.btn-ft:disabled{opacity:.5;cursor:not-allowed;}
+.ft-note{font-size:11px;color:var(--muted);text-align:center;margin-top:14px;font-style:italic;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ft-card">
+  <div class="ft-header">
+    <div class="ft-title">⚡ {{ t.fast_track_title }}</div>
+    <div class="ft-subtitle">{{ t.fast_track_subtitle }}</div>
+  </div>
+  <div class="ft-body">
+    <form method="POST" enctype="multipart/form-data" id="ft-form">
+
+      <div class="ft-field">
+        <label>{{ t.upload_label_clan }}</label>
+        <select name="clan" required>
+          <option value="" disabled selected>{{ t.select_placeholder }}</option>
+          {% for c in clan_options %}
+          <option value="{{ c }}">{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="ft-field">
+        <label>{{ t.upload_label_file }}</label>
+        <input type="file" name="csv_file" accept=".txt" required/>
+      </div>
+
+      <div class="ft-settings">
+        <div class="ft-settings-title">{{ t.fast_track_settings_label }}</div>
+        <div class="ft-setting-row">✓ <span>{{ t.opt_clan_battle }}</span> · {{ t.roster_clan_mode_label }}: <span>{{ t.opt_8421 }}</span></div>
+        <div class="ft-setting-row">✓ {{ t.roster_priority_label }}: <span>{{ t.opt_class }}</span></div>
+        <div class="ft-setting-row">✓ {{ t.roster_online_label }}: <span>{{ t.opt_prioritize_online }}</span></div>
+        <div class="ft-setting-row">✓ {{ t.roster_dist_label }}: <span>{{ t.opt_even_dist }}</span></div>
+        <div class="ft-setting-row">✓ PowerPlayer: <span>{{ t.opt_power_yes }}</span></div>
+      </div>
+
+      <button type="submit" class="btn-ft" id="ft-btn">{{ t.fast_track_btn }}</button>
+      <div class="ft-note">{{ t.fast_track_note }}</div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.getElementById('ft-form').addEventListener('submit', function() {
+  var btn = document.getElementById('ft-btn');
+  btn.disabled = true;
+  btn.textContent = '{{ t.fast_track_processing }}';
+});
+</script>
+{% endblock %}

@@ -1273,3 +1273,261 @@ def manual_roster_save():
         current_app.logger.error(f'manual_roster_save error: {traceback.format_exc()}')
         flash(f'Save failed: {e}', 'error')
         return redirect(url_for('main.manual_roster_select'))
+
+
+# ---------------------------------------------------------------------------
+# Fast Track Generator
+# ---------------------------------------------------------------------------
+
+@main_bp.route('/fast-track', methods=['GET', 'POST'])
+@login_required
+def fast_track():
+    tr = t()
+    if request.method == 'POST':
+        file = request.files.get('csv_file')
+        clan = request.form.get('clan', '').strip()
+
+        if not file or file.filename == '':
+            flash(tr['fast_track_error_no_file'], 'error')
+            return redirect(request.url)
+        if not file.filename.lower().endswith('.txt'):
+            flash(tr['upload_error_wrong_type'], 'error')
+            return redirect(request.url)
+        if clan not in CLAN_OPTIONS:
+            flash(tr['upload_error_no_clan'], 'error')
+            return redirect(request.url)
+
+        # Save file to uploads
+        filename    = f"{uuid.uuid4().hex}.txt"
+        filepath    = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+
+        try:
+            df = parse_txt_to_df(filepath)
+        except Exception as e:
+            os.remove(filepath)
+            flash(f'{tr["fast_track_error_parse"]}: {e}', 'error')
+            return redirect(request.url)
+
+        row_count    = len(df)
+        today        = date.today().strftime('%Y-%m-%d')
+        display_name = f"{clan}_{today}.txt"
+
+        upload_rec = Upload(
+            filename=filename,
+            original_filename=display_name,
+            user_id=current_user.id,
+            is_shared=False,
+            row_count=row_count,
+            columns=json.dumps(list(df.columns)),
+        )
+        db.session.add(upload_rec)
+        db.session.commit()
+
+        # Build player pool with fixed Fast Track settings
+        cols       = list(df.columns)
+        col_data   = cols[1:-1]
+        rows       = df.fillna('').to_dict(orient='records')
+        all_players = []
+        for i, row in enumerate(rows):
+            row['_confirmed'] = False   # no attendance data yet
+            row['_power']     = False
+            row['_source']    = display_name
+            all_players.append(row)
+
+        # Deduplicate
+        seen = {}
+        for p in sorted(all_players, key=_reso, reverse=True):
+            name = p.get('Nazwa', '')
+            if name and name not in seen:
+                seen[name] = p
+        all_players = list(seen.values())
+
+        # Fixed Fast Track options
+        FT_BATTLE_TYPE  = 'Clan Battle'
+        FT_CLAN_MODE    = '8 4 2 1'
+        FT_PRIORITY     = 'Class'
+        FT_ONLINE       = 'Prioritize Online'
+        FT_DIST         = 'Even distribution'
+        FT_NUM_BATTLES  = 12
+        FT_POWER_PLAYER = 'Yes — apply 20% boost'
+
+        # Class filter — all classes
+        active_classes = ALL_CLASSES
+        all_players    = [p for p in all_players if p.get('Klasa', '') in active_classes]
+
+        # PowerPlayer boost — mark all as power (no attendance, use all)
+        # (no boost since no power_rows data — just skip boost silently)
+
+        pool = _apply_online_filter(all_players, FT_ONLINE, FT_NUM_BATTLES * 8)
+
+        groups, tier_labels = _build_groups(
+            pool, FT_NUM_BATTLES, FT_PRIORITY, FT_DIST, clan_mode=FT_CLAN_MODE
+        )
+
+        # Preserve source_file
+        for g in groups:
+            for p in g:
+                if p.get('_source'):
+                    p['source_file'] = p['_source']
+        for p in all_players:
+            if p.get('_source'):
+                p['source_file'] = p['_source']
+
+        def _clean(p):
+            return {k: v for k, v in p.items() if not k.startswith('_')}
+
+        clean_groups   = [[_clean(p) for p in g] for g in groups]
+        full_pool_clean = [_clean(p) for p in all_players]
+
+        config = {
+            'battle_type':    FT_BATTLE_TYPE,
+            'clan_mode':      FT_CLAN_MODE,
+            'priority':       FT_PRIORITY,
+            'online_only':    FT_ONLINE,
+            'distribution':   FT_DIST,
+            'num_battles':    FT_NUM_BATTLES,
+            'active_classes': active_classes,
+            'source_files':   [display_name],
+            'tier_labels':    tier_labels,
+            'power_player':   FT_POWER_PLAYER,
+        }
+
+        from models import SavedRoster
+        name = f"{current_user.username}_{today}"
+        sr = SavedRoster(
+            name=name,
+            created_by=current_user.id,
+            battle_type=FT_BATTLE_TYPE,
+            config=json.dumps(config),
+            groups_data=json.dumps(clean_groups),
+            columns_data=json.dumps(col_data),
+            player_pool=json.dumps(full_pool_clean),
+            overrides='{}',
+        )
+        db.session.add(sr)
+        db.session.commit()
+
+        # Build and stream Excel inline (same logic as saved_roster_export)
+        try:
+            from openpyxl import Workbook
+            from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+            from openpyxl.utils import get_column_letter
+            from io import BytesIO
+            import traceback as _tb
+
+            black='000000'; white='FFFFFF'; light_gray='F2F2F2'
+            mid_gray='CCCCCC'; dark_gray='444444'; hdr_fill='2A2A2A'; accent_dk='3A6B00'
+            tier_colours={'8':('FFF0E0','7A3A00'),'4':('E8F5E8','1A5C1A'),
+                          '2':('E0EEF8','0A3A6A'),'1':('FCE8E8','7A1A1A')}
+            class_colours={
+                'Nekromanta':('EEF0FF','3A3A8A'),'Barbarzyca':('FFF0E0','7A3A00'),
+                'Barbarzyńca':('FFF0E0','7A3A00'),'Łowca demonów':('EAFAEA','1A5C1A'),
+                'Rycerz krwi':('FFE8E8','7A1A1A'),'Czarownik':('F5E8FF','6A1A8A'),
+                'Mnich':('E8F8FF','0A5A7A'),'Krzyżowiec':('FFFAE0','6A5A00'),
+                'Sztormiciel':('E8F0FF','1A3A8A'),'Druid':('E8FFEE','0A5A2A'),
+            }
+            def sol(h): return PatternFill('solid', start_color=h, fgColor=h)
+            def bdr(c=mid_gray):
+                s=Side(style='thin',color=c); return Border(left=s,right=s,top=s,bottom=s)
+
+            BATTLES_PER_ROW=3; GAP_COLS=1; BATTLE_COLS=1+len(col_data)
+            total_cols=BATTLES_PER_ROW*BATTLE_COLS+(BATTLES_PER_ROW-1)*GAP_COLS
+
+            wb=Workbook(); ws=wb.active; ws.title=name[:31]
+            ws.sheet_view.showGridLines=False
+
+            # Title
+            ws.row_dimensions[1].height=22
+            c=ws.cell(1,1,name)
+            c.font=Font(name='Arial',bold=True,size=13,color=accent_dk)
+            c.fill=sol(light_gray); c.alignment=Alignment(horizontal='left',vertical='center')
+            ws.merge_cells(start_row=1,start_column=1,end_row=1,end_column=total_cols)
+            ws.row_dimensions[2].height=13
+            c=ws.cell(2,1,f'{FT_BATTLE_TYPE} · {FT_CLAN_MODE} · {FT_PRIORITY} · {FT_DIST}')
+            c.font=Font(name='Arial',size=8,color=dark_gray,italic=True)
+            c.fill=sol(light_gray); c.alignment=Alignment(horizontal='left',vertical='center')
+            ws.merge_cells(start_row=2,start_column=1,end_row=2,end_column=total_cols)
+
+            # Column widths
+            col_widths=[4]+[max(13,len(c2)+2) for c2 in col_data]
+            for block in range(BATTLES_PER_ROW):
+                base=1+block*(BATTLE_COLS+GAP_COLS)
+                for ci,w in enumerate(col_widths):
+                    ws.column_dimensions[get_column_letter(base+ci)].width=w
+                if block<BATTLES_PER_ROW-1:
+                    ws.column_dimensions[get_column_letter(base+BATTLE_COLS)].width=2
+
+            def write_battle(gi, group, start_row, start_col):
+                tier=tier_labels[gi] if tier_labels and gi<len(tier_labels) else None
+                bl=f'Battle {gi+1}'+(f' [{tier}]' if tier else '')
+                tf,tt=tier_colours.get(tier,(light_gray,dark_gray)) if tier else (light_gray,dark_gray)
+                end_col=start_col+BATTLE_COLS-1
+                ws.row_dimensions[start_row].height=18
+                c=ws.cell(start_row,start_col,bl)
+                c.font=Font(name='Arial',bold=True,size=9,color=tt); c.fill=sol(tf)
+                c.alignment=Alignment(horizontal='center',vertical='center'); c.border=bdr()
+                ws.merge_cells(start_row=start_row,start_column=start_col,end_row=start_row,end_column=end_col)
+                sub=start_row+1; ws.row_dimensions[sub].height=16
+                for ci2,hdr in enumerate(['#']+col_data):
+                    c=ws.cell(sub,start_col+ci2,hdr)
+                    c.font=Font(name='Arial',bold=True,size=8,color=white); c.fill=sol(hdr_fill)
+                    c.alignment=Alignment(horizontal='center' if ci2==0 else 'left',vertical='center')
+                    c.border=bdr(hdr_fill)
+                for pi,player in enumerate(group):
+                    dr=start_row+2+pi; ws.row_dimensions[dr].height=15
+                    rbg=white if pi%2==0 else light_gray
+                    c=ws.cell(dr,start_col,pi+1)
+                    c.font=Font(name='Arial',size=8,color=dark_gray); c.fill=sol(rbg)
+                    c.alignment=Alignment(horizontal='center',vertical='center'); c.border=bdr()
+                    for ci2,col2 in enumerate(col_data,1):
+                        val=str(player.get(col2,''or''))
+                        c=ws.cell(dr,start_col+ci2,val)
+                        c.fill=sol(rbg); c.alignment=Alignment(horizontal='left',vertical='center')
+                        c.font=Font(name='Arial',size=8,color=black); c.border=bdr()
+                        if col2=='Nazwa': c.font=Font(name='Arial',size=8,bold=True,color=black)
+                        elif col2=='Klasa':
+                            bg2,fg2=class_colours.get(val,(rbg,dark_gray))
+                            c.fill=sol(bg2); c.font=Font(name='Arial',size=8,bold=True,color=fg2)
+                            c.alignment=Alignment(horizontal='center',vertical='center')
+                        elif col2 in ('Rezonowanie','Ranking udziału','Poziom'):
+                            c.alignment=Alignment(horizontal='center',vertical='center')
+                try:
+                    avg=round(sum(int(p.get('Rezonowanie',0)or 0) for p in group)/len(group)) if group else 0
+                except: avg=0
+                fr=start_row+2+len(group); ws.row_dimensions[fr].height=12
+                c=ws.cell(fr,start_col,f'{len(group)} players · avg reso {avg}')
+                c.font=Font(name='Arial',size=7,color=dark_gray,italic=True); c.fill=sol(light_gray)
+                c.alignment=Alignment(horizontal='left',vertical='center'); c.border=bdr()
+                ws.merge_cells(start_row=fr,start_column=start_col,end_row=fr,end_column=end_col)
+                return 2+len(group)+1
+
+            cur_row=4; max_band=0
+            for gi,group in enumerate(clean_groups):
+                pos=gi%BATTLES_PER_ROW
+                sc=1+pos*(BATTLE_COLS+GAP_COLS)
+                used=write_battle(gi,group,cur_row,sc)
+                max_band=max(max_band,used)
+                if pos==BATTLES_PER_ROW-1 or gi==len(clean_groups)-1:
+                    cur_row+=max_band+1; max_band=0
+
+            buf=BytesIO(); wb.save(buf); buf.seek(0)
+            xlsx_bytes=buf.getvalue()
+            safe_name=name.replace(' ','_')
+            resp=current_app.response_class(
+                xlsx_bytes,
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            resp.headers['Content-Disposition']=f'attachment; filename="{safe_name}.xlsx"'
+            resp.headers['Content-Length']=len(xlsx_bytes)
+            # Flash so user sees it after redirect (but we return excel directly)
+            # Store saved roster id in session so we can redirect after download
+            session['ft_roster_id'] = sr.id
+            return resp
+
+        except Exception as e:
+            current_app.logger.error(f'fast_track export error: {_tb.format_exc()}')
+            flash(f'{tr["fast_track_error_parse"]}: {e}', 'error')
+            return redirect(url_for('main.saved_roster_view', roster_id=sr.id))
+
+    return render_template('fast_track.html', clan_options=CLAN_OPTIONS)
