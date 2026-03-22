@@ -276,9 +276,9 @@ def save_attendance(upload_id):
     power     = {}
     absent    = {}
     for i in range(len(df)):
-        confirmed[str(i)] = f'row_{i}'    in request.form
-        power[str(i)]     = f'power_{i}'  in request.form
-        absent[str(i)]    = f'absent_{i}' in request.form
+        confirmed[str(i)] = request.form.get(f'row_{i}',    '0') == '1'
+        power[str(i)]     = request.form.get(f'power_{i}',  '0') == '1'
+        absent[str(i)]    = request.form.get(f'absent_{i}', '0') == '1'
 
     attendance = Attendance.query.filter_by(upload_id=upload_id).first()
     if attendance:
