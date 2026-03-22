@@ -16,9 +16,9 @@
     padding: 10px 14px; border-bottom: 2px solid var(--border);
     white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,.4);
   }
-  .roster-table th.col-confirm { color: var(--accent); text-align: center; min-width: 150px; }
-  .roster-table th.col-power   { color: #f0c060; text-align: center; min-width: 150px; }
-  .roster-table th.col-absent  { color: #f07070; text-align: center; min-width: 150px; }
+  .roster-table th.col-confirm { color: var(--accent); text-align: center; width: 90px; }
+  .roster-table th.col-power   { color: #f0c060; text-align: center; width: 90px; }
+  .roster-table th.col-absent  { color: #f07070; text-align: center; width: 90px; }
   .roster-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   .roster-table tr:last-child td { border-bottom: none; }
   .roster-table tbody tr { transition: background .1s; }
@@ -46,24 +46,21 @@
   .col-confirm-cell, .col-power-cell, .col-absent-cell { text-align: center; }
 
   .toggle-label {
-    display: inline-flex; align-items: center; gap: 8px;
-    cursor: pointer; padding: 5px 12px; border-radius: 99px;
-    border: 1px solid var(--border); font-size: 12px;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid var(--border); font-size: 14px;
     color: var(--muted); transition: all .15s; user-select: none;
   }
   .toggle-label:hover { border-color: var(--accent); color: var(--accent); }
   .toggle-label input[type=checkbox] { display: none; }
-  .toggle-label .check-icon {
-    width: 14px; height: 14px; border: 1px solid currentColor;
-    border-radius: 3px; display: flex; align-items: center;
-    justify-content: center; flex-shrink: 0; font-size: 10px;
-  }
-  .toggle-label.is-confirmed { border-color: var(--accent); color: var(--accent); background: rgba(200,240,122,.1); }
-  .toggle-label.is-confirmed .check-icon::after { content: '✓'; }
-  .toggle-label.is-power { border-color: #f0c060; color: #f0c060; background: rgba(240,192,96,.1); }
-  .toggle-label.is-power .check-icon::after { content: '⚡'; font-size: 9px; }
-  .toggle-label.is-absent { border-color: #f07070; color: #f07070; background: rgba(240,100,100,.1); }
-  .toggle-label.is-absent .check-icon::after { content: '✗'; }
+  .toggle-label .check-icon { display:none; }
+  .toggle-label.is-confirmed { border-color: var(--accent); color: var(--accent); background: rgba(200,240,122,.15); }
+  .toggle-label.is-power    { border-color: #f0c060; color: #f0c060; background: rgba(240,192,96,.15); }
+  .toggle-label.is-absent   { border-color: #f07070; color: #f07070; background: rgba(240,100,100,.15); }
+  .toggle-label .tgl-icon   { font-size: 13px; line-height: 1; opacity: 0.25; }
+  .toggle-label.is-confirmed .tgl-icon,
+  .toggle-label.is-power .tgl-icon,
+  .toggle-label.is-absent .tgl-icon { opacity: 1; }
 
   /* Sort toggle */
   .sort-toggle { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 16px; width: fit-content; }
@@ -153,19 +150,19 @@
           <td class="col-confirm-cell">
             <label class="toggle-label {{ 'is-confirmed' if is_confirmed else '' }}" for="check-{{ idx }}" id="label-{{ idx }}">
               <input type="checkbox" name="row_{{ idx }}" id="check-{{ idx }}" {{ 'checked' if is_confirmed else '' }} onchange="toggleConfirm({{ idx }}, this.checked)"/>
-              <span class="check-icon"></span><span>{{ t.attendance_col }}</span>
+              <span class="tgl-icon">{{ "✓" if is_confirmed else "·" }}</span>
             </label>
           </td>
           <td class="col-power-cell">
             <label class="toggle-label {{ 'is-power' if is_power else '' }}" for="power-{{ idx }}" id="plabel-{{ idx }}">
               <input type="checkbox" name="power_{{ idx }}" id="power-{{ idx }}" {{ 'checked' if is_power else '' }} onchange="togglePower({{ idx }}, this.checked)"/>
-              <span class="check-icon"></span><span>{{ t.power_player_col }}</span>
+              <span class="tgl-icon" id="picon-{{ idx }}">{{ "⚡" if is_power else "·" }}</span>
             </label>
           </td>
           <td class="col-absent-cell">
             <label class="toggle-label {{ 'is-absent' if is_absent else '' }}" for="absent-{{ idx }}" id="alabel-{{ idx }}">
               <input type="checkbox" name="absent_{{ idx }}" id="absent-{{ idx }}" {{ 'checked' if is_absent else '' }} onchange="toggleAbsent({{ idx }}, this.checked)"/>
-              <span class="check-icon"></span><span>{{ t.absent_short }}</span>
+              <span class="tgl-icon" id="aicon-{{ idx }}">{{ "✗" if is_absent else "·" }}</span>
             </label>
           </td>
         </tr>
@@ -190,17 +187,26 @@ var currentSort = 'reso';
 
 function toggleConfirm(idx, checked) {
   document.getElementById('row-' + idx).classList.toggle('confirmed-row', checked);
-  document.getElementById('label-' + idx).classList.toggle('is-confirmed', checked);
+  var lbl = document.getElementById('label-' + idx);
+  lbl.classList.toggle('is-confirmed', checked);
+  var icon = lbl.querySelector('.tgl-icon');
+  if (icon) icon.textContent = checked ? '✓' : '·';
   updateCounts();
 }
 function togglePower(idx, checked) {
   document.getElementById('row-' + idx).classList.toggle('power-row', checked);
-  document.getElementById('plabel-' + idx).classList.toggle('is-power', checked);
+  var lbl = document.getElementById('plabel-' + idx);
+  lbl.classList.toggle('is-power', checked);
+  var icon = lbl.querySelector('.tgl-icon');
+  if (icon) icon.textContent = checked ? '⚡' : '·';
   updateCounts();
 }
 function toggleAbsent(idx, checked) {
   document.getElementById('row-' + idx).classList.toggle('absent-row', checked);
-  document.getElementById('alabel-' + idx).classList.toggle('is-absent', checked);
+  var lbl = document.getElementById('alabel-' + idx);
+  lbl.classList.toggle('is-absent', checked);
+  var icon = lbl.querySelector('.tgl-icon');
+  if (icon) icon.textContent = checked ? '✗' : '·';
   updateCounts();
 }
 

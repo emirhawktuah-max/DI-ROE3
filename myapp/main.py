@@ -693,10 +693,8 @@ def roster_view():
     }
     source_color_map = {sf: i for i, sf in enumerate(source_files)}
 
-    # Build list of absent players for display if Exclude Absent mode
-    absent_players = []
-    if online_only == 'Exclude Absent':
-        absent_players = [_clean(p) for p in all_players if p.get('_absent')]
+    # Build list of absent players for display always
+    absent_players = [_clean(p) for p in all_players if p.get('_absent')]
 
     return render_template('roster_view.html',
                            groups=clean_groups,
@@ -815,6 +813,9 @@ def saved_roster_view(roster_id):
         except: sf = []
     source_color_map = {f: i for i, f in enumerate(sf)}
 
+    # Extract absent players from pool for display
+    absent_players = [p for p in player_pool if p.get('absent')]
+
     return render_template('saved_roster_view.html',
                            sr=sr,
                            groups=groups,
@@ -824,7 +825,8 @@ def saved_roster_view(roster_id):
                            config=config,
                            player_pool=player_pool,
                            source_files=sf,
-                           source_color_map=source_color_map)
+                           source_color_map=source_color_map,
+                           absent_players=absent_players)
 
 
 @main_bp.route('/saved-rosters/<int:roster_id>/override', methods=['POST'])
