@@ -4,83 +4,77 @@
 {% block head %}
 <style>
   .roster-wrap { overflow-x: auto; }
-
-  .roster-table {
-    width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px;
-  }
+  .roster-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
   .roster-table thead tr { position: sticky; top: 56px; z-index: 10; }
   .roster-table tbody tr:first-child td { padding-top: 12px; }
   .roster-table th {
     background: #1e1e1e; color: var(--muted); font-size: 11px;
     text-transform: uppercase; letter-spacing: .08em;
-    padding: 10px 14px; border-bottom: 2px solid var(--border);
+    padding: 10px 12px; border-bottom: 2px solid var(--border);
     white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,.4);
   }
-  .roster-table th.col-confirm { color: var(--accent); text-align: center; width: 90px; }
-  .roster-table th.col-power   { color: #f0c060; text-align: center; width: 90px; }
-  .roster-table th.col-absent  { color: #f07070; text-align: center; width: 90px; }
-  .roster-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  /* Flag columns: narrow, icon-only header */
+  .th-flag { width: 52px; text-align: center; padding: 10px 4px !important; font-size: 16px; }
+  .th-online  { color: var(--accent); }
+  .th-power   { color: #f0c060; }
+  .th-absent  { color: #f07070; }
+  .roster-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .td-flag { padding: 6px 4px !important; text-align: center; width: 52px; }
   .roster-table tr:last-child td { border-bottom: none; }
   .roster-table tbody tr { transition: background .1s; }
   .roster-table tbody tr:hover td { background: rgba(200,240,122,.04); }
   .roster-table tbody tr.confirmed-row td { background: rgba(200,240,122,.07); }
-  .roster-table tbody tr.power-row td { background: rgba(240,192,96,.07); }
-  .roster-table tbody tr.absent-row td { background: rgba(240,100,100,.07); }
+  .roster-table tbody tr.power-row td    { background: rgba(240,192,96,.07); }
+  .roster-table tbody tr.absent-row td   { background: rgba(240,100,100,.07); }
 
-  .col-num { color: var(--muted); font-size: 11px; width: 40px; text-align: right; }
+  .col-num  { color: var(--muted); font-size: 11px; width: 36px; text-align: right; }
   .col-name { font-weight: 500; color: var(--text); }
 
   .class-badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 500; white-space: nowrap; }
-  .cls-Nekromanta      { background:#1a1a2e; color:#a0a0f0; border:1px solid #2a2a4e; }
-  .cls-Barbarzyńca     { background:#2e1a0f; color:#f0a060; border:1px solid #4e2a0f; }
-  .cls-Łowca_demonów   { background:#1a2e1a; color:#70c070; border:1px solid #2a4e2a; }
-  .cls-Rycerz_krwi     { background:#2e0f0f; color:#f07070; border:1px solid #5c1a1a; }
-  .cls-Czarownik       { background:#2a1a2e; color:#c070e0; border:1px solid #4a2a5e; }
-  .cls-Mnich           { background:#1a2a2e; color:#60c0d0; border:1px solid #2a4a5e; }
-  .cls-Krzyżowiec      { background:#2e2a0f; color:#e0d060; border:1px solid #4e400f; }
-  .cls-Sztormiciel     { background:#0f1e2e; color:#60a0f0; border:1px solid #1a3a5c; }
-  .cls-Druid           { background:#1a2e20; color:#60d090; border:1px solid #2a4e38; }
-  .cls-default         { background:#1a1a1a; color:var(--muted); border:1px solid var(--border); }
+  .cls-Nekromanta    { background:#1a1a2e; color:#a0a0f0; border:1px solid #2a2a4e; }
+  .cls-Barbarzyńca   { background:#2e1a0f; color:#f0a060; border:1px solid #4e2a0f; }
+  .cls-Łowca_demonów { background:#1a2e1a; color:#70c070; border:1px solid #2a4e2a; }
+  .cls-Rycerz_krwi   { background:#2e0f0f; color:#f07070; border:1px solid #5c1a1a; }
+  .cls-Czarownik     { background:#2a1a2e; color:#c070e0; border:1px solid #4a2a5e; }
+  .cls-Mnich         { background:#1a2a2e; color:#60c0d0; border:1px solid #2a4a5e; }
+  .cls-Krzyżowiec    { background:#2e2a0f; color:#e0d060; border:1px solid #4e400f; }
+  .cls-Sztormiciel   { background:#0f1e2e; color:#60a0f0; border:1px solid #1a3a5c; }
+  .cls-Druid         { background:#1a2e20; color:#60d090; border:1px solid #2a4e38; }
+  .cls-default       { background:#1a1a1a; color:var(--muted); border:1px solid var(--border); }
   .rank-outside { color: var(--muted); font-size: 11px; font-style: italic; }
 
-  .col-confirm-cell, .col-power-cell, .col-absent-cell { text-align: center; }
-
-  .toggle-label {
+  /* Toggle circles */
+  .tgl {
     display: inline-flex; align-items: center; justify-content: center;
-    cursor: pointer; width: 32px; height: 32px; border-radius: 50%;
-    border: 1px solid var(--border); font-size: 14px;
-    color: var(--muted); transition: all .15s; user-select: none;
+    cursor: pointer; width: 34px; height: 34px; border-radius: 50%;
+    border: 2px solid #3a3a3a; font-size: 14px; font-weight: 700;
+    color: #555; background: #1a1a1a;
+    transition: all .15s; user-select: none;
   }
-  .toggle-label:hover { border-color: var(--accent); color: var(--accent); }
-  .toggle-label input[type=checkbox] { display: none; }
-  .toggle-label .check-icon { display:none; }
-  .toggle-label.is-confirmed { border-color: var(--accent); color: var(--accent); background: rgba(200,240,122,.15); }
-  .toggle-label.is-power    { border-color: #f0c060; color: #f0c060; background: rgba(240,192,96,.15); }
-  .toggle-label.is-absent   { border-color: #f07070; color: #f07070; background: rgba(240,100,100,.15); }
-  .toggle-label .tgl-icon   { font-size: 13px; line-height: 1; opacity: 0.25; }
-  .toggle-label.is-confirmed .tgl-icon,
-  .toggle-label.is-power .tgl-icon,
-  .toggle-label.is-absent .tgl-icon { opacity: 1; }
+  .tgl:hover { border-color: #666; color: #999; }
+  .tgl input { display: none; }
+  .tgl.on-confirm { border-color: var(--accent); color: var(--accent); background: rgba(200,240,122,.12); }
+  .tgl.on-power   { border-color: #f0c060; color: #f0c060; background: rgba(240,192,96,.12); }
+  .tgl.on-absent  { border-color: #f07070; color: #f07070; background: rgba(240,100,100,.12); }
 
   /* Sort toggle */
-  .sort-toggle { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 16px; width: fit-content; }
+  .sort-toggle { display: flex; border: 1px solid var(--border); border-radius: 99px; overflow: hidden; width: fit-content; }
   .sort-btn { padding: 5px 14px; font-size: 11px; cursor: pointer; color: var(--muted); background: var(--surface); border: none; transition: all .15s; white-space: nowrap; }
   .sort-btn.active { background: var(--accent); color: #0f0f0f; font-weight: 600; }
   .sort-btn:hover:not(.active) { color: var(--text); }
 
   .attendance-footer {
     display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: 16px; padding: 20px 24px;
+    flex-wrap: wrap; gap: 16px; padding: 18px 24px;
     background: #1e1e1e; border-top: 2px solid var(--border);
     border-radius: 0 0 6px 6px; position: sticky; bottom: 0; z-index: 10;
   }
   .counters { display: flex; gap: 20px; flex-wrap: wrap; }
-  .attendance-counter { font-size: 13px; color: var(--muted); }
-  .attendance-counter strong { font-size: 20px; font-family: var(--serif); font-weight: 300; color: var(--accent); margin-right: 4px; }
-  .power-counter { font-size: 13px; color: var(--muted); }
-  .power-counter strong { font-size: 20px; font-family: var(--serif); font-weight: 300; color: #f0c060; margin-right: 4px; }
-  .absent-counter { font-size: 13px; color: var(--muted); }
-  .absent-counter strong { font-size: 20px; font-family: var(--serif); font-weight: 300; color: #f07070; margin-right: 4px; }
+  .cnt { font-size: 13px; color: var(--muted); }
+  .cnt strong { font-size: 20px; font-family: var(--serif); font-weight: 300; margin-right: 4px; }
+  .cnt-online strong { color: var(--accent); }
+  .cnt-power  strong { color: #f0c060; }
+  .cnt-absent strong { color: #f07070; }
 </style>
 {% endblock %}
 
@@ -94,7 +88,7 @@
   &middot; <span style="color:#f07070;">{{ absent_count }} {{ t.absent_count }}</span>
 </div>
 
-<div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
+<div style="display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
   <a href="{{ url_for('main.manage_uploads') }}" class="btn btn-ghost">← {{ t.preview_btn_back }}</a>
   <div class="sort-toggle">
     <button class="sort-btn active" id="sort-reso" onclick="sortRows('reso')">↓ {{ t.sort_by_reso }}</button>
@@ -105,11 +99,11 @@
 <form method="POST" action="{{ url_for('main.save_attendance', upload_id=upload.id) }}" id="attendance-form">
 
   <!-- TOP ribbon -->
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;padding:12px 0;margin-bottom:8px;">
-    <div style="display:flex;gap:20px;flex-wrap:wrap;">
-      <div class="attendance-counter"><strong id="confirmed-count-top">{{ confirmed_count }}</strong>{{ t.attendance_of }} {{ rows|length }} {{ t.attendance_count }}</div>
-      <div class="power-counter"><strong id="power-count-top">{{ power_count }}</strong>{{ t.power_player_short }}</div>
-      <div class="absent-counter"><strong id="absent-count-top">{{ absent_count }}</strong>{{ t.absent_count }}</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:10px 0;margin-bottom:8px;">
+    <div class="counters">
+      <div class="cnt cnt-online"><strong id="cc-top">{{ confirmed_count }}</strong>{{ t.attendance_of }} {{ rows|length }} {{ t.attendance_count }}</div>
+      <div class="cnt cnt-power"><strong id="pc-top">{{ power_count }}</strong>{{ t.power_player_short }}</div>
+      <div class="cnt cnt-absent"><strong id="ac-top">{{ absent_count }}</strong>{{ t.absent_count }}</div>
     </div>
     <button type="submit" class="btn btn-primary">{{ t.attendance_save }} ✓</button>
   </div>
@@ -121,9 +115,9 @@
           <tr>
             <th class="col-num">#</th>
             {% for col in columns %}<th>{{ col }}</th>{% endfor %}
-            <th class="col-confirm">{{ t.attendance_col }}</th>
-            <th class="col-power">{{ t.power_player_col }}</th>
-            <th class="col-absent">{{ t.absent_col }}</th>
+            <th class="th-flag th-online" title="{{ t.attendance_col }}">✓</th>
+            <th class="th-flag th-power"  title="{{ t.power_player_col }}">⚡</th>
+            <th class="th-flag th-absent" title="{{ t.absent_col }}">✗</th>
           </tr>
         </thead>
         <tbody id="table-body">
@@ -134,7 +128,7 @@
         {% set is_absent    = absent.get(idx|string, false) %}
         <tr class="{{ 'confirmed-row' if is_confirmed else '' }} {{ 'power-row' if is_power else '' }} {{ 'absent-row' if is_absent else '' }}"
             id="row-{{ idx }}"
-            data-reso="{{ row.get('Rezonowanie', '0') | string | replace('', '0') }}"
+            data-reso="{{ row.get('Rezonowanie', '0') }}"
             data-name="{{ row.get('Nazwa', '') }}">
           <td class="col-num">{{ loop.index }}</td>
           {% for col in columns %}
@@ -147,22 +141,28 @@
               <td>{% if val == 'Poza rankingiem' or val == '' %}<span class="rank-outside">{{ val if val else '—' }}</span>{% else %}{{ val }}{% endif %}</td>
             {% else %}<td>{{ val }}</td>{% endif %}
           {% endfor %}
-          <td class="col-confirm-cell">
-            <label class="toggle-label {{ 'is-confirmed' if is_confirmed else '' }}" for="check-{{ idx }}" id="label-{{ idx }}">
-              <input type="checkbox" name="row_{{ idx }}" id="check-{{ idx }}" {{ 'checked' if is_confirmed else '' }} onchange="toggleConfirm({{ idx }}, this.checked)"/>
-              <span class="tgl-icon">{{ "✓" if is_confirmed else "·" }}</span>
+
+          <!-- Online -->
+          <td class="td-flag">
+            <label class="tgl {{ 'on-confirm' if is_confirmed else '' }}" id="lc-{{ idx }}" title="{{ t.attendance_col }}">
+              <input type="checkbox" name="row_{{ idx }}" id="check-{{ idx }}" {{ 'checked' if is_confirmed else '' }} onchange="tog({{ idx }},'confirm',this.checked)"/>
+              <span id="ic-{{ idx }}">{{ '✓' if is_confirmed else '·' }}</span>
             </label>
           </td>
-          <td class="col-power-cell">
-            <label class="toggle-label {{ 'is-power' if is_power else '' }}" for="power-{{ idx }}" id="plabel-{{ idx }}">
-              <input type="checkbox" name="power_{{ idx }}" id="power-{{ idx }}" {{ 'checked' if is_power else '' }} onchange="togglePower({{ idx }}, this.checked)"/>
-              <span class="tgl-icon" id="picon-{{ idx }}">{{ "⚡" if is_power else "·" }}</span>
+
+          <!-- Power -->
+          <td class="td-flag">
+            <label class="tgl {{ 'on-power' if is_power else '' }}" id="lp-{{ idx }}" title="{{ t.power_player_col }}">
+              <input type="checkbox" name="power_{{ idx }}" id="power-{{ idx }}" {{ 'checked' if is_power else '' }} onchange="tog({{ idx }},'power',this.checked)"/>
+              <span id="ip-{{ idx }}">{{ '⚡' if is_power else '·' }}</span>
             </label>
           </td>
-          <td class="col-absent-cell">
-            <label class="toggle-label {{ 'is-absent' if is_absent else '' }}" for="absent-{{ idx }}" id="alabel-{{ idx }}">
-              <input type="checkbox" name="absent_{{ idx }}" id="absent-{{ idx }}" {{ 'checked' if is_absent else '' }} onchange="toggleAbsent({{ idx }}, this.checked)"/>
-              <span class="tgl-icon" id="aicon-{{ idx }}">{{ "✗" if is_absent else "·" }}</span>
+
+          <!-- Absent -->
+          <td class="td-flag">
+            <label class="tgl {{ 'on-absent' if is_absent else '' }}" id="la-{{ idx }}" title="{{ t.absent_col }}">
+              <input type="checkbox" name="absent_{{ idx }}" id="absent-{{ idx }}" {{ 'checked' if is_absent else '' }} onchange="tog({{ idx }},'absent',this.checked)"/>
+              <span id="ia-{{ idx }}">{{ '✗' if is_absent else '·' }}</span>
             </label>
           </td>
         </tr>
@@ -173,9 +173,9 @@
 
     <div class="attendance-footer">
       <div class="counters">
-        <div class="attendance-counter"><strong id="confirmed-count">{{ confirmed_count }}</strong>{{ t.attendance_of }} {{ rows|length }} {{ t.attendance_count }}</div>
-        <div class="power-counter"><strong id="power-count">{{ power_count }}</strong>{{ t.power_player_short }}</div>
-        <div class="absent-counter"><strong id="absent-count">{{ absent_count }}</strong>{{ t.absent_count }}</div>
+        <div class="cnt cnt-online"><strong id="cc-bot">{{ confirmed_count }}</strong>{{ t.attendance_of }} {{ rows|length }} {{ t.attendance_count }}</div>
+        <div class="cnt cnt-power"><strong id="pc-bot">{{ power_count }}</strong>{{ t.power_player_short }}</div>
+        <div class="cnt cnt-absent"><strong id="ac-bot">{{ absent_count }}</strong>{{ t.absent_count }}</div>
       </div>
       <button type="submit" class="btn btn-primary">{{ t.attendance_save }} ✓</button>
     </div>
@@ -183,68 +183,42 @@
 </form>
 
 <script>
-var currentSort = 'reso';
+var ICONS = { confirm: '✓', power: '⚡', absent: '✗' };
+var CLASSES = { confirm: 'on-confirm', power: 'on-power', absent: 'on-absent' };
+var ROW_CLS  = { confirm: 'confirmed-row', power: 'power-row', absent: 'absent-row' };
+var ICON_IDS = { confirm: 'ic-', power: 'ip-', absent: 'ia-' };
+var LBL_IDS  = { confirm: 'lc-', power: 'lp-', absent: 'la-' };
 
-function toggleConfirm(idx, checked) {
-  document.getElementById('row-' + idx).classList.toggle('confirmed-row', checked);
-  var lbl = document.getElementById('label-' + idx);
-  lbl.classList.toggle('is-confirmed', checked);
-  var icon = lbl.querySelector('.tgl-icon');
-  if (icon) icon.textContent = checked ? '✓' : '·';
-  updateCounts();
-}
-function togglePower(idx, checked) {
-  document.getElementById('row-' + idx).classList.toggle('power-row', checked);
-  var lbl = document.getElementById('plabel-' + idx);
-  lbl.classList.toggle('is-power', checked);
-  var icon = lbl.querySelector('.tgl-icon');
-  if (icon) icon.textContent = checked ? '⚡' : '·';
-  updateCounts();
-}
-function toggleAbsent(idx, checked) {
-  document.getElementById('row-' + idx).classList.toggle('absent-row', checked);
-  var lbl = document.getElementById('alabel-' + idx);
-  lbl.classList.toggle('is-absent', checked);
-  var icon = lbl.querySelector('.tgl-icon');
-  if (icon) icon.textContent = checked ? '✗' : '·';
+function tog(idx, type, on) {
+  document.getElementById('row-' + idx).classList.toggle(ROW_CLS[type], on);
+  var lbl = document.getElementById(LBL_IDS[type] + idx);
+  lbl.classList.toggle(CLASSES[type], on);
+  document.getElementById(ICON_IDS[type] + idx).textContent = on ? ICONS[type] : '·';
   updateCounts();
 }
 
 function updateCounts() {
-  var confirmed = document.querySelectorAll('input[id^="check-"]:checked').length;
-  var power     = document.querySelectorAll('input[id^="power-"]:checked').length;
-  var absent    = document.querySelectorAll('input[id^="absent-"]:checked').length;
-  ['confirmed-count','confirmed-count-top'].forEach(id => document.getElementById(id).textContent = confirmed);
-  ['power-count','power-count-top'].forEach(id => document.getElementById(id).textContent = power);
-  ['absent-count','absent-count-top'].forEach(id => document.getElementById(id).textContent = absent);
+  var c = document.querySelectorAll('input[id^="check-"]:checked').length;
+  var p = document.querySelectorAll('input[id^="power-"]:checked').length;
+  var a = document.querySelectorAll('input[id^="absent-"]:checked').length;
+  ['cc-top','cc-bot'].forEach(id => document.getElementById(id).textContent = c);
+  ['pc-top','pc-bot'].forEach(id => document.getElementById(id).textContent = p);
+  ['ac-top','ac-bot'].forEach(id => document.getElementById(id).textContent = a);
 }
 
 function sortRows(mode) {
-  currentSort = mode;
   document.getElementById('sort-reso').classList.toggle('active', mode === 'reso');
   document.getElementById('sort-alpha').classList.toggle('active', mode === 'alpha');
-
   var tbody = document.getElementById('table-body');
   var rows  = Array.from(tbody.querySelectorAll('tr'));
-
   rows.sort(function(a, b) {
-    if (mode === 'reso') {
-      var ra = parseInt(a.dataset.reso) || 0;
-      var rb = parseInt(b.dataset.reso) || 0;
-      return rb - ra;
-    } else {
-      var na = (a.dataset.name || '').toLowerCase();
-      var nb = (b.dataset.name || '').toLowerCase();
-      return na < nb ? -1 : na > nb ? 1 : 0;
-    }
+    if (mode === 'reso') return (parseInt(b.dataset.reso)||0) - (parseInt(a.dataset.reso)||0);
+    return (a.dataset.name||'').toLowerCase() < (b.dataset.name||'').toLowerCase() ? -1 : 1;
   });
-
-  rows.forEach(function(r) { tbody.appendChild(r); });
-
-  // Re-number rows
-  rows.forEach(function(r, i) {
-    var numCell = r.querySelector('.col-num');
-    if (numCell) numCell.textContent = i + 1;
+  rows.forEach(function(r,i) {
+    tbody.appendChild(r);
+    var nc = r.querySelector('.col-num');
+    if (nc) nc.textContent = i + 1;
   });
 }
 </script>
