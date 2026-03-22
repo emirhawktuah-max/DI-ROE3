@@ -72,6 +72,8 @@ class Attendance(db.Model):
     confirmed_rows = db.Column(db.Text, default='{}')
     # JSON dict: { "1": true, ... } — rows marked as PowerPlayer
     power_rows = db.Column(db.Text, default='{}')
+    # JSON dict: { "1": true, ... } — rows marked as Confirmed Absent
+    absent_rows = db.Column(db.Text, default='{}')
     saved_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):

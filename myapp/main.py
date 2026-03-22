@@ -242,10 +242,12 @@ def view_upload(upload_id):
     # Load existing attendance for this upload
     attendance = Attendance.query.filter_by(upload_id=upload_id).first()
     confirmed = json.loads(attendance.confirmed_rows) if attendance else {}
-    power = json.loads(attendance.power_rows if attendance and attendance.power_rows else '{}')
+    power     = json.loads(attendance.power_rows  if attendance and attendance.power_rows  else '{}')
+    absent    = json.loads(attendance.absent_rows if attendance and attendance.absent_rows else '{}')
 
     confirmed_count = sum(1 for v in confirmed.values() if v)
-    power_count = sum(1 for v in power.values() if v)
+    power_count     = sum(1 for v in power.values() if v)
+    absent_count    = sum(1 for v in absent.values() if v)
 
     return render_template('view_upload.html',
                            upload=upload_rec,
@@ -253,8 +255,10 @@ def view_upload(upload_id):
                            rows=rows,
                            confirmed=confirmed,
                            power=power,
+                           absent=absent,
                            confirmed_count=confirmed_count,
-                           power_count=power_count)
+                           power_count=power_count,
+                           absent_count=absent_count)
 
 
 @main_bp.route('/uploads/<int:upload_id>/attendance', methods=['POST'])
@@ -269,20 +273,24 @@ def save_attendance(upload_id):
     filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], upload_rec.filename)
     df = parse_txt_to_df(filepath)
     confirmed = {}
-    power = {}
+    power     = {}
+    absent    = {}
     for i in range(len(df)):
-        confirmed[str(i)] = f'row_{i}' in request.form
-        power[str(i)]     = f'power_{i}' in request.form
+        confirmed[str(i)] = f'row_{i}'    in request.form
+        power[str(i)]     = f'power_{i}'  in request.form
+        absent[str(i)]    = f'absent_{i}' in request.form
 
     attendance = Attendance.query.filter_by(upload_id=upload_id).first()
     if attendance:
         attendance.confirmed_rows = json.dumps(confirmed)
         attendance.power_rows     = json.dumps(power)
+        attendance.absent_rows    = json.dumps(absent)
         attendance.saved_at = __import__('datetime').datetime.utcnow()
     else:
         attendance = Attendance(upload_id=upload_id,
                                 confirmed_rows=json.dumps(confirmed),
-                                power_rows=json.dumps(power))
+                                power_rows=json.dumps(power),
+                                absent_rows=json.dumps(absent))
         db.session.add(attendance)
     db.session.commit()
 
@@ -298,7 +306,7 @@ def save_attendance(upload_id):
 BATTLE_TYPES        = ['RoE', 'Clan Battle']
 CLAN_BATTLE_MODES   = ['Standard', '8 4 2 1']
 PRIORITY_OPTIONS    = ['Rezonowanie', 'Class']
-ONLINE_OPTIONS      = ['Only confirmed online', 'Prioritize Online', 'All players']
+ONLINE_OPTIONS      = ['Only confirmed online', 'Prioritize Online', 'All players', 'Exclude Absent']
 DIST_OPTIONS        = ['Max power', 'Even distribution']
 ROE_BATTLES_OPTIONS = ['7', '10']
 POWER_PLAYER_OPTIONS = ['Yes — apply 20% boost', 'No boost']
@@ -406,14 +414,16 @@ def _apply_online_filter(all_players, online_mode, num_slots):
     'Only confirmed online'  → confirmed players only
     'All players'            → everyone
     'Prioritize Online'      → confirmed first, then fill with non-confirmed
+    'Exclude Absent'         → all players except those marked confirmed absent
     """
     if online_mode == 'Only confirmed online':
         return [p for p in all_players if p.get('_confirmed')]
     elif online_mode == 'Prioritize Online':
         confirmed  = [p for p in all_players if p.get('_confirmed')]
         remaining  = [p for p in all_players if not p.get('_confirmed')]
-        # Fill up to num_slots
         return (confirmed + remaining)[:num_slots]
+    elif online_mode == 'Exclude Absent':
+        return [p for p in all_players if not p.get('_absent')]
     else:
         return all_players
 
@@ -488,6 +498,7 @@ def roster_config():
             '10':                        tr['opt_10'],
             'Yes — apply 20% boost':     tr['opt_power_yes'],
             'No boost':                  tr['opt_power_no'],
+            'Exclude Absent':            tr['opt_exclude_absent'],
         }
         return render_template('roster_config.html',
                                uploads=uploads, ids_str=ids_str,
@@ -591,11 +602,13 @@ def roster_view():
         if columns_used is None:
             columns_used = cols[1:-1]
 
-        power_map = json.loads(attendance.power_rows if attendance and attendance.power_rows else '{}')
+        power_map  = json.loads(attendance.power_rows  if attendance and attendance.power_rows  else '{}')
+        absent_map = json.loads(attendance.absent_rows if attendance and attendance.absent_rows else '{}')
         rows = df.fillna('').to_dict(orient='records')
         for i, row in enumerate(rows):
             row['_confirmed'] = confirmed_map.get(str(i), False)
             row['_power']     = power_map.get(str(i), False)
+            row['_absent']    = absent_map.get(str(i), False)
             row['_source']    = upload_rec.original_filename
             all_players.append(row)
         source_files.append(upload_rec.original_filename)
@@ -674,10 +687,16 @@ def roster_view():
         'Only confirmed online': tr['opt_online_only'],
         'Prioritize Online': tr['opt_prioritize_online'],
         'All players': tr['opt_all_players'],
+        'Exclude Absent': tr['opt_exclude_absent'],
         'Max power': tr['opt_max_power'],
         'Even distribution': tr['opt_even_dist'],
     }
     source_color_map = {sf: i for i, sf in enumerate(source_files)}
+
+    # Build list of absent players for display if Exclude Absent mode
+    absent_players = []
+    if online_only == 'Exclude Absent':
+        absent_players = [_clean(p) for p in all_players if p.get('_absent')]
 
     return render_template('roster_view.html',
                            groups=clean_groups,
@@ -696,7 +715,8 @@ def roster_view():
                            full_pool=full_pool_clean,
                            power_player=power_player,
                            opt_labels=opt_labels,
-                           source_color_map=source_color_map)
+                           source_color_map=source_color_map,
+                           absent_players=absent_players)
 
 
 @main_bp.route('/roster/save', methods=['POST'])
@@ -942,7 +962,12 @@ def saved_roster_export(roster_id):
         # ── Helper: write one battle block ────────────────────────────
         def write_battle(gi, group, start_row, start_col):
             tier = tier_labels[gi] if tier_labels and gi < len(tier_labels) else None
-            battle_label = f'Battle {gi+1}' + (f' [{tier}]' if tier else '')
+            if tier and tier_labels:
+                same_tier_before = sum(1 for t in tier_labels[:gi] if t == tier)
+                pos_in_tier = same_tier_before + 1
+                battle_label = f'Battle {gi+1} ({pos_in_tier} for {tier}pts)'
+            else:
+                battle_label = f'Battle {gi+1}'
             tier_fill, tier_text = (tier_colours.get(tier, (light_gray, dark_gray))
                                     if tier else (light_gray, dark_gray))
 
@@ -1160,7 +1185,8 @@ def manual_roster_compose():
 
         attendance = Attendance.query.filter_by(upload_id=uid).first()
         confirmed_map = json.loads(attendance.confirmed_rows) if attendance else {}
-        power_map     = json.loads(attendance.power_rows if attendance and attendance.power_rows else '{}')
+        power_map  = json.loads(attendance.power_rows  if attendance and attendance.power_rows  else '{}')
+        absent_map = json.loads(attendance.absent_rows if attendance and attendance.absent_rows else '{}')
 
         cols = list(df.columns)
         if columns_used is None:
@@ -1170,6 +1196,7 @@ def manual_roster_compose():
         for i, row in enumerate(rows):
             row['_confirmed'] = confirmed_map.get(str(i), False)
             row['_power']     = power_map.get(str(i), False)
+            row['_absent']    = absent_map.get(str(i), False)
             row['_source']    = upload_rec.original_filename
             all_players.append(row)
         source_files.append(upload_rec.original_filename)
@@ -1188,6 +1215,7 @@ def manual_roster_compose():
         pc = {k: v for k, v in p.items() if not k.startswith('_')}
         pc['confirmed']   = p.get('_confirmed', False)
         pc['power']       = p.get('_power', False)
+        pc['absent']      = p.get('_absent', False)
         pc['source_file'] = p.get('_source', '')
         clean_pool.append(pc)
 
@@ -1460,7 +1488,12 @@ def fast_track():
 
             def write_battle(gi, group, start_row, start_col):
                 tier=tier_labels[gi] if tier_labels and gi<len(tier_labels) else None
-                bl=f'Battle {gi+1}'+(f' [{tier}]' if tier else '')
+                if tier and tier_labels:
+                    same_tier_before = sum(1 for t2 in tier_labels[:gi] if t2 == tier)
+                    pos_in_tier = same_tier_before + 1
+                    bl = f'Battle {gi+1} ({pos_in_tier} for {tier}pts)'
+                else:
+                    bl = f'Battle {gi+1}'
                 tf,tt=tier_colours.get(tier,(light_gray,dark_gray)) if tier else (light_gray,dark_gray)
                 end_col=start_col+BATTLE_COLS-1
                 ws.row_dimensions[start_row].height=18

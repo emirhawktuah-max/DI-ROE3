@@ -112,6 +112,23 @@
   {% endfor %}
 </div>
 
+<!-- Confirmed Absent panel (shown only when Exclude Absent mode was used) -->
+{% if absent_players %}
+<div style="margin-top:28px;">
+  <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#f07070;margin-bottom:10px;">
+    ✗ {{ t.absent_panel_title }} ({{ absent_players|length }})
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;">
+    {% for p in absent_players %}
+    <span style="background:rgba(240,100,100,.1);border:1px solid rgba(240,100,100,.3);border-radius:99px;padding:3px 12px;font-size:12px;color:#f07070;">
+      {{ p.get('Nazwa','') }}
+      {% if p.get('Rezonowanie') %}<span style="opacity:.6;font-size:10px;margin-left:4px;">{{ p.get('Rezonowanie') }}</span>{% endif %}
+    </span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <!-- Save form — data is stored server-side in session -->
 <form method="POST" action="{{ url_for('main.roster_save') }}" style="margin-top:28px;">
   <div style="display:flex;gap:12px;">
