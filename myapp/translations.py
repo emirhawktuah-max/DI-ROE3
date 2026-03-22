@@ -160,6 +160,8 @@ TRANSLATIONS = {
         'flash_email_taken': 'Email already in use.',
         'flash_password_short': 'Password must be at least 6 characters.',
 
+        'attendance_col_short': 'Online',
+        'absent_col_short': 'Absent',
 'absent_col': 'Confirmed Absent',
         'absent_short': 'Absent',
         'absent_count': 'absent',
@@ -486,6 +488,8 @@ TRANSLATIONS = {
         'flash_email_taken': 'Adres email jest już używany.',
         'flash_password_short': 'Hasło musi mieć co najmniej 6 znaków.',
 
+        'attendance_col_short': 'Online',
+        'absent_col_short': 'Nieobecny',
 'absent_col': 'Potwierdzona nieobecność',
         'absent_short': 'Nieobecny',
         'absent_count': 'nieobecnych',

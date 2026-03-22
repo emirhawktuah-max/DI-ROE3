@@ -3,12 +3,12 @@
 
 {% block head %}
 <style>
-  .roster-wrap { overflow-x: auto; }
+  .roster-wrap { overflow-x: auto; overflow-y: visible; }
   .roster-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 
-  /* Sticky header offset: nav(56px) + top-bar(~54px) + gap */
+  /* Sticky header: sits just below the nav bar */
   .roster-table thead th {
-    position: sticky; top: 110px; z-index: 10;
+    position: sticky; top: 56px; z-index: 10;
     background: #1e1e1e; color: var(--muted);
     font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
     padding: 8px 12px; border-bottom: 2px solid var(--border);
@@ -113,15 +113,19 @@
     <button type="submit" class="btn btn-primary">{{ t.attendance_save }} ✓</button>
   </div>
 
-  <div class="card" style="padding:0; overflow:hidden;">
+  <div class="card" style="padding:0; overflow:visible;">
     <div class="roster-wrap">
       <table class="roster-table" id="main-table">
         <thead>
           <tr>
             <th class="col-num">#</th>
             {% for col in columns %}<th>{{ col }}</th>{% endfor %}
-            <th style="text-align:center;width:80px;color:var(--accent);" title="{{ t.attendance_col }} / {{ t.absent_col }}">✓ / ✗</th>
-            <th style="text-align:center;width:56px;color:#f0c060;" title="{{ t.power_player_col }}">⚡</th>
+            <th style="text-align:center;width:90px;color:var(--accent);font-size:10px;letter-spacing:.04em;white-space:normal;line-height:1.3;">
+              {{ t.attendance_col_short }}<br><span style="color:var(--muted);font-size:9px;">{{ t.absent_col_short }}</span>
+            </th>
+            <th style="text-align:center;width:60px;color:#f0c060;font-size:10px;letter-spacing:.04em;white-space:normal;line-height:1.3;">
+              {{ t.power_player_short }}
+            </th>
           </tr>
         </thead>
         <tbody id="table-body">
@@ -196,15 +200,15 @@ function cyclePresence(idx) {
   var state = btn.dataset.state;
 
   if (state === 'neutral') {
-    state = 'online';
-    btn.textContent = '✓'; btn.className = 'presence-btn state-online';
-    hc.value = '1'; ha.value = '0';
-    row.classList.remove('s-absent'); row.classList.add('s-online');
-  } else if (state === 'online') {
     state = 'absent';
     btn.textContent = '✗'; btn.className = 'presence-btn state-absent';
     hc.value = '0'; ha.value = '1';
     row.classList.remove('s-online'); row.classList.add('s-absent');
+  } else if (state === 'absent') {
+    state = 'online';
+    btn.textContent = '✓'; btn.className = 'presence-btn state-online';
+    hc.value = '1'; ha.value = '0';
+    row.classList.remove('s-absent'); row.classList.add('s-online');
   } else {
     state = 'neutral';
     btn.textContent = '·'; btn.className = 'presence-btn';
