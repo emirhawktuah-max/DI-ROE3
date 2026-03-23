@@ -533,7 +533,7 @@ def roster_config():
         battle_type   = request.form.get('battle_type', '').strip()
         clan_mode     = request.form.get('clan_mode', 'Standard').strip()
         priority      = request.form.get('priority', '').strip()
-        online_only   = request.form.getlist('online_only')
+        online_only   = request.form.getlist('online_only') or ['All players']
         distribution  = request.form.get('distribution', '').strip()
         roe_battles   = request.form.get('roe_battles', '10').strip()
         active_classes= request.form.getlist('active_classes')
@@ -544,7 +544,7 @@ def roster_config():
             errors.append(tr['roster_error_no_battle_type'])
         if priority not in PRIORITY_OPTIONS:
             errors.append(tr['roster_error_no_priority'])
-        if not online_only or not all(o in ONLINE_OPTIONS for o in online_only):
+        if not all(o in ONLINE_OPTIONS for o in online_only):
             errors.append(tr['roster_error_no_online'])
         if distribution not in DIST_OPTIONS:
             errors.append(tr['roster_error_no_dist'])
@@ -712,6 +712,9 @@ def roster_view():
         'Even distribution': tr['opt_even_dist'],
     }
     source_color_map = {sf: i for i, sf in enumerate(source_files)}
+    _ol_map = {'Only confirmed online': tr['opt_online_only'], 'Prioritize Online': tr['opt_prioritize_online'],
+               'All players': tr['opt_all_players'], 'Exclude Absent': tr['opt_exclude_absent']}
+    online_label = ' + '.join(_ol_map.get(o, o) for o in (online_only if isinstance(online_only, list) else [online_only]))
 
     # Build list of absent players for display always
     absent_players = [_clean(p) for p in all_players if p.get('_absent')]
@@ -725,6 +728,7 @@ def roster_view():
                            clan_mode=clan_mode,
                            priority=priority,
                            online_only=online_only,
+                           online_label=online_label,
                            distribution=distribution,
                            num_battles=num_battles,
                            active_classes=active_classes,
@@ -1249,6 +1253,9 @@ def manual_roster_compose():
     }
 
     source_color_map = {sf: i for i, sf in enumerate(source_files)}
+    _ol_map = {'Only confirmed online': tr['opt_online_only'], 'Prioritize Online': tr['opt_prioritize_online'],
+               'All players': tr['opt_all_players'], 'Exclude Absent': tr['opt_exclude_absent']}
+    online_label = ' + '.join(_ol_map.get(o, o) for o in (online_only if isinstance(online_only, list) else [online_only]))
 
     # Store heavy data server-side to avoid large hidden form fields
     import pickle

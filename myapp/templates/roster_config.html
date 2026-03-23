@@ -160,16 +160,58 @@
         <!-- 3. Online (multi-select checkboxes) -->
         <div class="form-group">
           <label>{{ t.roster_online_label }}</label>
-          <div class="option-group">
+          <div class="option-group" id="online-group">
             {% for opt in online_options %}
             <label class="option-pill">
-              <input type="checkbox" name="online_only" value="{{ opt }}"/>
+              <input type="checkbox" name="online_only" value="{{ opt }}"
+                     id="ol-{{ loop.index }}"
+                     onchange="onlineChanged('{{ opt }}', this.checked)"/>
               <span class="option-pill-label">{{ opt_labels[opt] }}</span>
             </label>
             {% endfor %}
           </div>
           <div style="font-size:10px;color:var(--muted);margin-top:6px;">{{ t.roster_online_multi_hint }}</div>
         </div>
+        <script>
+        function onlineChanged(val, checked) {
+          var boxes = document.querySelectorAll('#online-group input[type=checkbox]');
+          if (val === 'All players' && checked) {
+            // uncheck everything else
+            boxes.forEach(function(b) { if (b.value !== 'All players') b.checked = false; });
+          } else if (checked) {
+            // uncheck All players
+            boxes.forEach(function(b) { if (b.value === 'All players') b.checked = false; });
+          }
+        }
+        </script>
+        <script>
+        (function(){
+          var allOpt = document.querySelector('input[name="online_only"][value="All players"]');
+          var otherOpts = Array.from(document.querySelectorAll('input[name="online_only"]')).filter(function(el){ return el.value !== 'All players'; });
+          if (!allOpt) return;
+          allOpt.addEventListener('change', function(){
+            if (this.checked) {
+              otherOpts.forEach(function(el){ el.checked = false; el.closest('label').classList.remove('selected'); });
+            }
+            updatePillStyles();
+          });
+          otherOpts.forEach(function(el){
+            el.addEventListener('change', function(){
+              if (this.checked) {
+                allOpt.checked = false;
+                allOpt.closest('label').classList.remove('selected');
+              }
+              updatePillStyles();
+            });
+          });
+          function updatePillStyles(){
+            document.querySelectorAll('input[name="online_only"]').forEach(function(el){
+              var lbl = el.closest('label');
+              if (lbl) lbl.classList.toggle('selected', el.checked);
+            });
+          }
+        })();
+        </script>
 
         <hr class="section-divider"/>
 

@@ -45,7 +45,7 @@
 
 <div class="config-pills">
   <span class="config-pill">{{ t.roster_priority_label }}: <strong>{{ opt_labels[priority] }}</strong></span>
-  <span class="config-pill">{{ t.roster_online_label }}: <strong>{% if online_only is string %}{{ opt_labels.get(online_only, online_only) }}{% else %}{{ online_only | map("extract", opt_labels) | join(" + ") }}{% endif %}</strong></span>
+  <span class="config-pill">{{ t.roster_online_label }}: <strong>{% if online_only is string %}{{ opt_labels.get(online_only, online_only) }}{% else %}{% for o in online_only %}{{ opt_labels.get(o, o) }}{% if not loop.last %} + {% endif %}{% endfor %}{% endif %}</strong></span>
   <span class="config-pill">{{ t.roster_dist_label }}: <strong>{{ opt_labels[distribution] }}</strong></span>
   <span class="config-pill">{{ t.roster_num_battles_label }}: <strong>{{ num_battles }}</strong></span>
   <span class="config-pill">{{ t.roster_total_players }}: <strong>{{ total_players }}</strong></span>
