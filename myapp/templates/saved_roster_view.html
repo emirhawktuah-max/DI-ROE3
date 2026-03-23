@@ -147,7 +147,7 @@ tr.drag-over td{background:rgba(200,240,122,.15) !important;outline:2px dashed v
 
 <div class="config-pills">
   {% if config.priority %}<span class="config-pill">{{ t.roster_priority_label }}: <strong>{{ config.priority }}</strong></span>{% endif %}
-  {% if config.online_only %}<span class="config-pill">{{ t.roster_online_label }}: <strong>{{ config.online_only }}</strong></span>{% endif %}
+  {% if config.online_only %}<span class="config-pill">{{ t.roster_online_label }}: <strong>{% if config.online_only is string %}{{ config.online_only }}{% else %}{{ config.online_only | join(" + ") }}{% endif %}</strong></span>{% endif %}
   {% if config.distribution %}<span class="config-pill">{{ t.roster_dist_label }}: <strong>{{ config.distribution }}</strong></span>{% endif %}
   {% if config.num_battles %}<span class="config-pill">{{ t.roster_num_battles_label }}: <strong>{{ config.num_battles }}</strong></span>{% endif %}
   {% if config.source_files %}

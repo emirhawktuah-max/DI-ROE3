@@ -157,17 +157,18 @@
 
         <hr class="section-divider"/>
 
-        <!-- 3. Online -->
+        <!-- 3. Online (multi-select checkboxes) -->
         <div class="form-group">
           <label>{{ t.roster_online_label }}</label>
           <div class="option-group">
             {% for opt in online_options %}
             <label class="option-pill">
-              <input type="radio" name="online_only" value="{{ opt }}" required/>
+              <input type="checkbox" name="online_only" value="{{ opt }}"/>
               <span class="option-pill-label">{{ opt_labels[opt] }}</span>
             </label>
             {% endfor %}
           </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:6px;">{{ t.roster_online_multi_hint }}</div>
         </div>
 
         <hr class="section-divider"/>

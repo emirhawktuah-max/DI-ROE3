@@ -410,22 +410,38 @@ def _build_groups(players, num_battles, priority, distribution,
 
 def _apply_online_filter(all_players, online_mode, num_slots):
     """
-    Returns a pool respecting the online mode.
-    'Only confirmed online'  → confirmed players only
-    'All players'            → everyone
-    'Prioritize Online'      → confirmed first, then fill with non-confirmed
-    'Exclude Absent'         → all players except those marked confirmed absent
+    online_mode may be a string (legacy) or a list of option strings.
+    Options can be combined; logic:
+      'Only confirmed online'  → include only _confirmed players
+      'Prioritize Online'      → confirmed first, then fill with remaining
+      'Exclude Absent'         → remove _absent players (applied as a post-filter)
+      'All players'            → no pre-filter (default if nothing else chosen)
+    When multiple are selected, they compose:
+      e.g. [Prioritize Online, Exclude Absent] = prioritize confirmed,
+           but also strip absent from the pool first.
     """
-    if online_mode == 'Only confirmed online':
-        return [p for p in all_players if p.get('_confirmed')]
-    elif online_mode == 'Prioritize Online':
-        confirmed  = [p for p in all_players if p.get('_confirmed')]
-        remaining  = [p for p in all_players if not p.get('_confirmed')]
-        return (confirmed + remaining)[:num_slots]
-    elif online_mode == 'Exclude Absent':
-        return [p for p in all_players if not p.get('_absent')]
+    # Normalise to list
+    if isinstance(online_mode, str):
+        modes = [online_mode]
     else:
-        return all_players
+        modes = list(online_mode) if online_mode else ['All players']
+
+    pool = list(all_players)
+
+    # Step 1: exclude absent if requested
+    if 'Exclude Absent' in modes:
+        pool = [p for p in pool if not p.get('_absent')]
+
+    # Step 2: apply presence filter
+    if 'Only confirmed online' in modes:
+        pool = [p for p in pool if p.get('_confirmed')]
+    elif 'Prioritize Online' in modes:
+        confirmed = [p for p in pool if p.get('_confirmed')]
+        remaining = [p for p in pool if not p.get('_confirmed')]
+        pool = (confirmed + remaining)[:num_slots]
+    # 'All players' or no presence filter → keep pool as-is
+
+    return pool
 
 
 def _avg_reso(group):
@@ -517,7 +533,7 @@ def roster_config():
         battle_type   = request.form.get('battle_type', '').strip()
         clan_mode     = request.form.get('clan_mode', 'Standard').strip()
         priority      = request.form.get('priority', '').strip()
-        online_only   = request.form.get('online_only', '').strip()
+        online_only   = request.form.getlist('online_only')
         distribution  = request.form.get('distribution', '').strip()
         roe_battles   = request.form.get('roe_battles', '10').strip()
         active_classes= request.form.getlist('active_classes')
@@ -528,7 +544,7 @@ def roster_config():
             errors.append(tr['roster_error_no_battle_type'])
         if priority not in PRIORITY_OPTIONS:
             errors.append(tr['roster_error_no_priority'])
-        if online_only not in ONLINE_OPTIONS:
+        if not online_only or not all(o in ONLINE_OPTIONS for o in online_only):
             errors.append(tr['roster_error_no_online'])
         if distribution not in DIST_OPTIONS:
             errors.append(tr['roster_error_no_dist'])
@@ -553,7 +569,7 @@ def roster_config():
         session['roster_battle_type'] = battle_type
         session['roster_clan_mode']   = clan_mode
         session['roster_priority']    = priority
-        session['roster_online_only'] = online_only
+        session['roster_online_only'] = json.dumps(online_only)
         session['roster_distribution']= distribution
         session['roster_num_battles'] = num_battles
         session['roster_active_classes'] = active_classes
@@ -571,7 +587,11 @@ def roster_view():
     battle_type    = session.get('roster_battle_type', '')
     clan_mode      = session.get('roster_clan_mode', 'Standard')
     priority       = session.get('roster_priority', 'Rezonowanie')
-    online_only    = session.get('roster_online_only', 'All players')
+    online_only_raw = session.get('roster_online_only', '["All players"]')
+    try:
+        online_only = json.loads(online_only_raw) if isinstance(online_only_raw, str) and online_only_raw.startswith('[') else [online_only_raw]
+    except Exception:
+        online_only = ['All players']
     distribution   = session.get('roster_distribution', 'Max power')
     num_battles    = session.get('roster_num_battles', 12)
     active_classes = session.get('roster_active_classes', ALL_CLASSES)
@@ -739,7 +759,7 @@ def roster_save():
         'battle_type':    battle_type,
         'clan_mode':      clan_mode,
         'priority':       session.get('roster_priority'),
-        'online_only':    session.get('roster_online_only'),
+        'online_only':    online_only,
         'distribution':   session.get('roster_distribution'),
         'num_battles':    session.get('roster_num_battles'),
         'active_classes': session.get('roster_active_classes'),
