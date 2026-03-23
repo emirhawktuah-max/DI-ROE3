@@ -759,11 +759,18 @@ def roster_save():
     battle_type = session.get('roster_battle_type', '')
     clan_mode   = session.get('roster_clan_mode', 'Standard')
 
+    # Parse online_only from session (stored as JSON list since multi-select)
+    _online_raw = session.get('roster_online_only', '["All players"]')
+    try:
+        _online_only = json.loads(_online_raw) if isinstance(_online_raw, str) and _online_raw.startswith('[') else [_online_raw]
+    except Exception:
+        _online_only = ['All players']
+
     config = {
         'battle_type':    battle_type,
         'clan_mode':      clan_mode,
         'priority':       session.get('roster_priority'),
-        'online_only':    online_only,
+        'online_only':    _online_only,
         'distribution':   session.get('roster_distribution'),
         'num_battles':    session.get('roster_num_battles'),
         'active_classes': session.get('roster_active_classes'),
