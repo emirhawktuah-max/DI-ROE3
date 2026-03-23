@@ -324,6 +324,7 @@ TRANSLATIONS = {
 
         # Language toggle
         'select_placeholder': '— select —',
+        'theme_toggle': 'Switch to light mode',
         'lang_switch': 'Polski',
         'lang_code': 'pl',
     },
@@ -653,6 +654,7 @@ TRANSLATIONS = {
 
         # Language toggle
         'select_placeholder': '— wybierz —',
+        'theme_toggle': 'Przełącz na jasny motyw',
         'lang_switch': 'English',
         'lang_code': 'en',
     }

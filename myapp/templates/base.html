@@ -23,6 +23,117 @@
       --serif:    'Fraunces', serif;
     }
 
+    /* ── Light theme ─────────────────────────────────────────────── */
+    [data-theme="light"] {
+      --bg:       #f5f5f0;
+      --surface:  #ffffff;
+      --border:   #d8d8d0;
+      --accent:   #4a8c00;
+      --accent2:  #007a68;
+      --text:     #1a1a1a;
+      --muted:    #777;
+      --danger:   #c0392b;
+    }
+    [data-theme="light"] body {
+      background: var(--bg);
+      color: var(--text);
+    }
+    [data-theme="light"] nav {
+      background: #ffffff;
+      border-bottom-color: #d8d8d0;
+    }
+    [data-theme="light"] .card {
+      background: #ffffff;
+      border-color: #d8d8d0;
+    }
+    [data-theme="light"] .battle-card,
+    [data-theme="light"] .battle-card-header,
+    [data-theme="light"] .pool-panel {
+      background: #ffffff;
+      border-color: #d8d8d0;
+    }
+    [data-theme="light"] .battle-table th,
+    [data-theme="light"] .roster-table thead th,
+    [data-theme="light"] .battle-table thead th {
+      background: #f0f0ea;
+      color: #555;
+    }
+    [data-theme="light"] .battle-table td,
+    [data-theme="light"] .roster-table td {
+      border-bottom-color: #e8e8e0;
+    }
+    [data-theme="light"] .btn-ghost {
+      background: #f0f0ea;
+      color: #444;
+      border-color: #d0d0c8;
+    }
+    [data-theme="light"] .btn-ghost:hover {
+      background: #e8e8e0;
+    }
+    [data-theme="light"] .config-pill {
+      background: #f0f0ea;
+      border-color: #d0d0c8;
+    }
+    [data-theme="light"] .option-pill .option-pill-label {
+      background: #f0f0ea;
+      border-color: #d0d0c8;
+      color: #444;
+    }
+    [data-theme="light"] .section-divider {
+      border-color: #e0e0d8;
+    }
+    [data-theme="light"] .attendance-footer,
+    [data-theme="light"] .battle-card-header {
+      background: #f5f5ef;
+    }
+    [data-theme="light"] input[type=text],
+    [data-theme="light"] input[type=password],
+    [data-theme="light"] input[type=file],
+    [data-theme="light"] select,
+    [data-theme="light"] textarea {
+      background: #ffffff;
+      color: #1a1a1a;
+      border-color: #ccc;
+    }
+    [data-theme="light"] .page-title { color: #1a1a1a; }
+    [data-theme="light"] .page-subtitle { color: #666; }
+    [data-theme="light"] .nav-links a { color: #555; }
+    [data-theme="light"] .nav-links a:hover { color: #1a1a1a; }
+    [data-theme="light"] .nav-links a.nav-active { color: #1a1a1a; }
+    [data-theme="light"] .class-badge,
+    [data-theme="light"] .cls-Nekromanta,
+    [data-theme="light"] .cls-Barbarzyńca,
+    [data-theme="light"] .cls-Łowca_demonów,
+    [data-theme="light"] .cls-Rycerz_krwi,
+    [data-theme="light"] .cls-Czarownik,
+    [data-theme="light"] .cls-Mnich,
+    [data-theme="light"] .cls-Krzyżowiec,
+    [data-theme="light"] .cls-Sztormiciel,
+    [data-theme="light"] .cls-Druid { filter: brightness(1.15) saturate(1.2); }
+    [data-theme="light"] .override-select { background:#fff; color:#1a1a1a; border-color:#ccc; }
+    [data-theme="light"] .pool-panel { background:#fff; }
+    [data-theme="light"] #pool-list { background:#fff; }
+    [data-theme="light"] .player-item { background:#f5f5f0; }
+    [data-theme="light"] .player-item:hover { background:#eaeae4; }
+    [data-theme="light"] .battle-player { background:#f5f5f0; }
+    [data-theme="light"] .drop-zone { background:#fafaf5; border-color:#ccc; }
+    [data-theme="light"] .battle-drop-zone { background:rgba(74,140,0,.03); }
+    [data-theme="light"] .ft-card { background:#fff; }
+    [data-theme="light"] .ft-header { background:rgba(255,105,180,.06); }
+    [data-theme="light"] .sort-btn { background:#f0f0ea; color:#555; }
+    [data-theme="light"] .presence-btn,
+    [data-theme="light"] .power-btn { background:#f0f0ea; border-color:#ccc; color:#999; }
+
+    /* Theme toggle button */
+    .theme-btn {
+      background: none; border: 1px solid var(--border);
+      color: var(--muted); cursor: pointer;
+      border-radius: 99px; padding: 3px 10px;
+      font-size: 13px; transition: all .15s;
+      font-family: var(--mono);
+    }
+    .theme-btn:hover { border-color: var(--accent); color: var(--accent); }
+
     body {
       background: var(--bg);
       color: var(--text);
@@ -236,6 +347,25 @@
     }
   </style>
   {% block head %}{% endblock %}
+
+  <script>
+    (function() {
+      var theme = localStorage.getItem('zemsta_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+      document.addEventListener('DOMContentLoaded', function() {
+        var btn = document.getElementById('theme-toggle');
+        if (btn) btn.textContent = theme === 'light' ? '🌙' : '☀';
+      });
+    })();
+    function toggleTheme() {
+      var cur = document.documentElement.getAttribute('data-theme') || 'dark';
+      var next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('zemsta_theme', next);
+      var btn = document.getElementById('theme-toggle');
+      if (btn) btn.textContent = next === 'light' ? '🌙' : '☀';
+    }
+  </script>
 </head>
 <body>
 
@@ -258,6 +388,7 @@
     <span>{{ current_user.username }}
       {% if current_user.is_admin() %}<span class="badge">admin</span>{% endif %}
     </span>
+    <button class="theme-btn" id="theme-toggle" onclick="toggleTheme()" title="{{ t.theme_toggle }}">☀</button>
     <a href="{{ url_for('set_lang', lang=t.lang_code) }}" class="lang-btn">{{ t.lang_switch }}</a>
     <a href="{{ url_for('auth.logout') }}">{{ t.nav_logout }}</a>
   </div>

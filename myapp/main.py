@@ -905,6 +905,15 @@ def saved_roster_delete(roster_id):
 
 
 
+
+def _online_display(val):
+    """Convert online_only (str or list) to a display string."""
+    if not val:
+        return ''
+    if isinstance(val, list):
+        return ' + '.join(str(v) for v in val if v)
+    return str(val)
+
 @main_bp.route('/saved-rosters/<int:roster_id>/export')
 @login_required
 def saved_roster_export(roster_id):
@@ -1097,10 +1106,10 @@ def saved_roster_export(roster_id):
         meta_parts = [p for p in [
             sr.battle_type,
             config.get('priority'),
-            config.get('online_only'),
+            _online_display(config.get('online_only')),
             config.get('distribution'),
         ] if p]
-        c = ws.cell(2, 1, '  ·  '.join(meta_parts))
+        c = ws.cell(2, 1, '  ·  '.join(str(x) for x in meta_parts))
         c.font      = Font(name='Arial', size=8, color=dark_gray, italic=True)
         c.fill      = sol(light_gray)
         c.alignment = Alignment(horizontal='left', vertical='center')
